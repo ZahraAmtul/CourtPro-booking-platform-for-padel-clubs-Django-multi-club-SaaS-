@@ -1,0 +1,123 @@
+{% extends "base.html" %}{% load club %}
+{% block title %}Book a court · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="container">
+    <div class="steps-bar"><span class="on">1 · Choose time</span><span>2 · Your details</span><span>3 · Confirmed</span></div>
+    <h1 style="font-size:2.1rem">Book a court</h1>
+    <p>Select a date, tap a start time, then choose how long you want to play.</p>
+  </div>
+</div>
+
+<div class="container page-body">
+  <div class="date-strip">
+    {% for d in dates %}
+      <a class="date-chip{% if d == selected_date %} active{% endif %}" href="{% query_update date=d.isoformat %}">
+        <small>{% if forloop.first %}Today{% else %}{{ d|date:"D" }}{% endif %}</small>
+        <strong>{{ d|date:"j" }}</strong>
+        <small>{{ d|date:"M" }}</small>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="row between" style="margin:.25rem 0 1rem">
+    <h2 style="font-size:1.25rem;margin:0">{{ selected_date|date:"l, j F" }}</h2>
+    <div class="legend">
+      <span><i></i>Available</span>
+      <span><i style="background:#f1f5f9"></i>Booked / unavailable</span>
+      <span><i style="background:var(--amber);border-radius:50%;width:8px;height:8px;border:0"></i>Peak rate</span>
+      {% if court_filter %}<a href="{% query_update court='' %}">Show all courts</a>{% endif %}
+    </div>
+  </div>
+
+  {% for row in grid %}
+  <section class="card court-slots" data-court-name="{{ row.court.name }}">
+    <header>
+      <div>
+        <h3>{{ row.court.name }}</h3>
+        <span class="muted small">{{ row.court.get_court_type_display }} · {{ row.court.price_off_peak|money }}/hr off-peak · {{ row.court.price_peak|money }}/hr peak</span>
+      </div>
+      <span class="badge {% if row.free %}badge-green{% else %}badge-red{% endif %}">{{ row.free }} slots free</span>
+    </header>
+    <div class="slot-grid">
+      {% for slot in row.slots %}
+      <button type="button" class="slot{% if slot.peak %} peak{% endif %}{% if slot.status == 'booked' %} booked{% endif %}"
+              data-court="{{ row.court.slug }}" data-index="{{ forloop.counter0 }}" data-start="{{ slot.value }}"
+              data-label="{{ slot.local_start|time:'g:i A' }}" data-price="{{ slot.price }}"
+              {% if not slot.available %}disabled title="{{ slot.status|capfirst }}"{% endif %}>
+        {{ slot.local_start|time:"g:i" }}<small>{{ slot.local_start|time:"A" }}</small>
+      </button>
+      {% endfor %}
+    </div>
+  </section>
+  {% empty %}
+  <div class="card empty">No courts are available for booking right now.</div>
+  {% endfor %}
+
+  <form id="book-form" class="booking-bar idle" method="get" action="{% url 'bookings:details' %}"
+        data-slot="{{ club.slot_minutes }}" data-currency="{{ club.currency_symbol }}">
+    <input type="hidden" name="date" value="{{ selected_date.isoformat }}">
+    <input type="hidden" name="court" id="f-court">
+    <input type="hidden" name="start" id="f-start">
+    <div class="summary">
+      <strong id="sum-title">Select a start time</strong>
+      <span id="sum-sub">Tap any available slot above</span>
+    </div>
+    <div class="durations">
+      {% for d in durations %}
+      <label><input type="radio" name="duration" value="{{ d }}" {% if forloop.first %}checked{% endif %}><span>{{ d|duration }}</span></label>
+      {% endfor %}
+    </div>
+    <div class="row">
+      <span class="price-tag" id="sum-price"></span>
+      <button class="btn btn-primary" id="continue" disabled>Continue →</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const form = document.getElementById('book-form');
+  if (!form) return;
+  const slotMin = parseInt(form.dataset.slot, 10);
+  const currency = form.dataset.currency;
+  const radios = [...form.querySelectorAll('input[name=duration]')];
+  const fmt = v => currency + ' ' + Math.round(v).toLocaleString('en-US');
+  let sel = null;
+
+  const slotsOf = court => [...document.querySelectorAll(`.slot[data-court="${court}"]`)];
+  const freeRun = (court, idx) => { const s = slotsOf(court); let n = 0; while (idx + n < s.length && !s[idx + n].disabled) n++; return n; };
+
+  function render() {
+    document.querySelectorAll('.slot.selected, .slot.in-range').forEach(el => el.classList.remove('selected', 'in-range'));
+    if (!sel) return;
+    const run = freeRun(sel.court, sel.index);
+    radios.forEach(r => r.disabled = parseInt(r.value, 10) / slotMin > run);
+    let checked = radios.find(r => r.checked && !r.disabled) || radios.find(r => !r.disabled);
+    if (!checked) return;
+    checked.checked = true;
+    const steps = parseInt(checked.value, 10) / slotMin;
+    const list = slotsOf(sel.court).slice(sel.index, sel.index + steps);
+    let price = 0;
+    list.forEach((el, i) => { el.classList.add(i === 0 ? 'selected' : 'in-range'); price += parseFloat(el.dataset.price); });
+    const first = list[0];
+    const courtName = first.closest('.court-slots').dataset.courtName;
+    document.getElementById('sum-title').textContent = `${courtName} · ${first.dataset.label}`;
+    document.getElementById('sum-sub').textContent = `${checked.value} minutes · price per court`;
+    document.getElementById('sum-price').textContent = fmt(price);
+    document.getElementById('f-court').value = sel.court;
+    document.getElementById('f-start').value = first.dataset.start;
+    document.getElementById('continue').disabled = false;
+    form.classList.remove('idle');
+  }
+
+  document.querySelectorAll('.slot:not([disabled])').forEach(el => el.addEventListener('click', () => {
+    sel = { court: el.dataset.court, index: parseInt(el.dataset.index, 10) };
+    render();
+  }));
+  radios.forEach(r => r.addEventListener('change', render));
+})();
+</script>
+{% endblock %}

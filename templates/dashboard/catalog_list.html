@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block subheading %}{% if kind == "courts" %}Prices update instantly on the website{% elif kind == "extras" %}Upsell rentals and add-ons during checkout{% elif kind == "packages" %}Sell credit upfront — e.g. pay Rs 45,000, get Rs 50,000 to spend on courts{% else %}Fill quiet hours and reward regulars{% endif %}{% endblock %}
+{% block actions %}<a class="btn btn-blue btn-sm" href="{% url 'dashboard:catalog_create' kind %}">+ Add</a>{% endblock %}
+{% block content %}
+<div class="panel"><div class="table-wrap"><table class="table">
+  <thead><tr>{% for h in headers %}<th>{{ h|capfirst }}</th>{% endfor %}<th></th></tr></thead>
+  <tbody>
+  {% for obj, values in rows %}
+    <tr class="link-row" data-href="{% url 'dashboard:catalog_edit' kind obj.pk %}">
+      {% for v in values %}<td>{% if v is True %}<span class="badge badge-green">Yes</span>{% elif v is False %}<span class="badge badge-slate">No</span>{% elif v is None %}—{% else %}{{ v }}{% endif %}</td>{% endfor %}
+      <td class="num"><a class="btn btn-ghost btn-sm" href="{% url 'dashboard:catalog_edit' kind obj.pk %}">Edit</a></td>
+    </tr>
+  {% empty %}
+    <tr><td class="empty" colspan="{{ headers|length|add:1 }}">Nothing here yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

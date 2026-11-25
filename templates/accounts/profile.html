@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Profile · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Your profile</h1><p>{{ user.email }}</p></div></div>
+<div class="narrow page-body">
+  <form method="post" class="card form">
+    {% csrf_token %}
+    {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+    <div class="row"><button class="btn btn-dark">Save</button><a href="{% url 'accounts:my_bookings' %}">Back to bookings</a></div>
+  </form>
+</div>
+{% endblock %}

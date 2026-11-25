@@ -1,0 +1,29 @@
+{% load club %}<form method="post" class="panel form" id="sell">{% csrf_token %}
+  <div class="panel-head"><h3>Sell club credit</h3></div>
+  <div class="panel-body">
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="form-grid">
+      {% include "partials/field.html" with field=form.name %}
+      {% include "partials/field.html" with field=form.phone %}
+    </div>
+    {% include "partials/field.html" with field=form.package %}
+    <div class="form-grid" id="custom-amount">
+      {% include "partials/field.html" with field=form.price %}
+      {% include "partials/field.html" with field=form.credit %}
+    </div>
+    <div class="form-grid">
+      {% include "partials/field.html" with field=form.method %}
+      {% include "partials/field.html" with field=form.reference %}
+    </div>
+    <button class="btn btn-blue btn-block">Take payment &amp; add credit</button>
+    <p class="muted small" style="margin:.75rem 0 0">Creates an invoice for the money received. Credit can then pay for any booking at the desk.{% if club_role == "owner" %} <a href="{% url 'dashboard:catalog_list' 'packages' %}">Manage packages</a>{% endif %}</p>
+  </div>
+</form>
+<script>
+(() => {
+  const pkg = document.getElementById('id_package'), box = document.getElementById('custom-amount');
+  if (!pkg) return;
+  const sync = () => box.style.display = pkg.value ? 'none' : '';
+  pkg.addEventListener('change', sync); sync();
+})();
+</script>

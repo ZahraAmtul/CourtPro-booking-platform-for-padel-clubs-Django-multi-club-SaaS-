@@ -1,0 +1,79 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}Cash report{% endblock %}
+{% block heading %}Cash report{% endblock %}
+{% block subheading %}{{ day|date:"l, j F Y" }} · {{ summary.start|time:"g:i A" }} to {{ summary.end|date:"D" }} {{ summary.end|time:"g:i A" }}{% endblock %}
+{% block actions %}
+  <a class="btn btn-ghost btn-sm" href="?date={{ prev_day.isoformat }}">←</a>
+  {% if day != today %}<a class="btn btn-ghost btn-sm" href="?">Today</a>{% endif %}
+  <form method="get" class="filters" style="display:inline-flex"><input type="date" name="date" value="{{ day.isoformat }}" onchange="this.form.submit()"></form>
+  {% if day < today %}<a class="btn btn-ghost btn-sm" href="?date={{ next_day.isoformat }}">→</a>{% endif %}
+  <button class="btn btn-dark btn-sm" onclick="window.print()">Print</button>
+{% endblock %}
+{% block content %}
+<div class="kpis">
+  <div class="kpi accent"><div class="label">Collected</div><div class="value">{{ summary.collected|money }}</div><div class="hint">all payment methods</div></div>
+  <div class="kpi"><div class="label">Cash expected in drawer</div><div class="value">{{ summary.expected_cash|money }}</div><div class="hint">cash payments recorded</div></div>
+  <div class="kpi"><div class="label">Payments</div><div class="value">{{ summary.payments|length }}</div><div class="hint">{% if summary.credit_used %}+ {{ summary.credit_used|money }} paid from credit{% else %}recorded today{% endif %}</div></div>
+  <div class="kpi"><div class="label">Status</div>
+    {% if closed %}<div class="value" style="font-size:1.25rem;color:{% if closed.difference == 0 %}var(--green){% else %}var(--red){% endif %}">{% if closed.difference == 0 %}Closed ✓{% elif closed.difference > 0 %}+{{ closed.difference|money }} over{% else %}{{ closed.difference|abs|money }} short{% endif %}</div><div class="hint">by {{ closed.closed_by.first_name|default:closed.closed_by.email }} at {{ closed.closed_at|time:"g:i A" }}</div>
+    {% else %}<div class="value" style="font-size:1.25rem;color:var(--amber)">Not closed</div><div class="hint">count the drawer below</div>{% endif %}
+  </div>
+</div>
+
+<div class="dash-grid">
+  <div>
+    <div class="panel"><div class="panel-head"><h3>By payment method</h3></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Method</th><th class="num">Payments</th><th class="num">Total</th></tr></thead>
+        <tbody>
+        {% for m in summary.methods %}<tr><td>{{ m.label }}{% if not m.is_cash_in %} <span class="muted small">(prepaid earlier — not new money)</span>{% endif %}</td><td class="num">{{ m.count }}</td><td class="num"><strong>{{ m.total|money }}</strong></td></tr>
+        {% empty %}<tr><td colspan="3" class="empty">No payments on this day.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>By staff member</h3></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Received by</th><th class="num">Payments</th><th class="num">Cash</th><th class="num">Total</th></tr></thead>
+        <tbody>{% for name, v in summary.staff %}<tr><td>{{ name }}</td><td class="num">{{ v.count }}</td><td class="num">{{ v.cash|money }}</td><td class="num"><strong>{{ v.total|money }}</strong></td></tr>{% empty %}<tr><td colspan="4" class="muted">—</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>All payments</h3></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for p in summary.payments %}<tr><td>{{ p.paid_at|time:"g:i A" }}</td><td>{{ p.invoice.bill_to_name }}<div class="muted small">{% if p.invoice.booking %}<a href="{% url 'dashboard:booking_detail' p.invoice.booking.pk %}">{{ p.invoice.booking.reference }}</a>{% else %}<a href="{% url 'dashboard:invoice_detail' p.invoice.pk %}">{{ p.invoice.number }}</a>{% endif %}</div></td><td class="small">{{ p.get_method_display }}{% if p.reference %}<div class="muted">{{ p.reference }}</div>{% endif %}</td><td class="num"><strong>{{ p.amount|money }}</strong></td></tr>
+        {% empty %}<tr><td class="empty">Nothing recorded.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <div>
+    {% if closed %}
+    <div class="panel"><div class="panel-head"><h3>Day closed</h3></div><div class="panel-body">
+      <div class="summary-line"><span>Cash expected (at closing)</span><span>{{ closed.expected_cash|money }}</span></div>
+      <div class="summary-line"><span>Cash counted</span><span>{{ closed.counted_cash|money }}</span></div>
+      <div class="summary-line total"><span>Difference</span><span style="color:{% if closed.difference == 0 %}var(--green){% else %}var(--red){% endif %}">{% if closed.difference > 0 %}+{% endif %}{{ closed.difference|money }}</span></div>
+      {% if closed.note %}<p class="muted small">“{{ closed.note }}”</p>{% endif %}
+      {% if closed.expected_cash != summary.expected_cash %}<div class="info-box warn" style="margin:1rem 0 0">Cash payments changed after closing (now {{ summary.expected_cash|money }}). Reopen and count again if needed.</div>{% endif %}
+      {% if club_role == "owner" %}<form method="post" action="{% url 'dashboard:cash_reopen' closed.pk %}" style="margin-top:1rem" onsubmit="return confirm('Reopen this day?')">{% csrf_token %}<button class="btn btn-ghost btn-sm">Reopen day</button></form>{% endif %}
+    </div></div>
+    {% elif day <= today %}
+    <form method="post" class="panel form">{% csrf_token %}
+      <input type="hidden" name="date" value="{{ day.isoformat }}">
+      <div class="panel-head"><h3>Count &amp; close the day</h3></div>
+      <div class="panel-body">
+        <p class="muted small">Count the cash in the drawer (excluding your opening float) and enter it. The system compares it with the <strong>{{ summary.expected_cash|money }}</strong> of cash payments recorded.</p>
+        {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+        <button class="btn btn-blue btn-block">Close day</button>
+      </div>
+    </form>
+    {% endif %}
+
+    {% if history %}
+    <div class="panel"><div class="panel-head"><h3>Recent closes</h3><span class="muted small">owner only</span></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for h in history %}<tr class="link-row" data-href="?date={{ h.business_date.isoformat }}"><td>{{ h.business_date|date:"D j M" }}<div class="muted small">{{ h.closed_by.first_name|default:h.closed_by.email }}</div></td><td class="num">{{ h.counted_cash|money }}</td><td class="num">{% if h.difference == 0 %}<span class="badge badge-green badge-plain">exact</span>{% else %}<strong style="color:var(--red)">{% if h.difference > 0 %}+{% endif %}{{ h.difference|money }}</strong>{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

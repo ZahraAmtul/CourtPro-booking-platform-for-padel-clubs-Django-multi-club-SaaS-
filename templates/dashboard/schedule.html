@@ -1,0 +1,50 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Schedule{% endblock %}
+{% block heading %}Schedule{% endblock %}
+{% block subheading %}{{ day|date:"l, j F Y" }} · {{ count }} booking{{ count|pluralize }} · click an empty slot to add a walk-in{% endblock %}
+{% block actions %}
+  <a class="btn btn-ghost btn-sm" href="?date={{ prev_day.isoformat }}">←</a>
+  {% if day != today %}<a class="btn btn-ghost btn-sm" href="?">Today</a>{% endif %}
+  <form method="get" class="filters" style="display:inline-flex"><input type="date" name="date" value="{{ day.isoformat }}" onchange="this.form.submit()"></form>
+  <a class="btn btn-ghost btn-sm" href="?date={{ next_day.isoformat }}">→</a>
+  <a class="btn btn-blue btn-sm" href="{% url 'dashboard:booking_create' %}?date={{ day.isoformat }}">+ New booking</a>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="table-wrap" style="max-height:calc(100vh - 190px);overflow:auto">
+    <table class="schedule">
+      <thead><tr><th class="time-col"></th>{% for c in courts %}<th>{{ c.name }}<div class="muted small" style="font-weight:500">{{ c.get_court_type_display }}</div></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr class="{% if row.peak %}peak{% endif %}">
+          <td class="time-col">{{ row.time|time:"g:i A" }}</td>
+          {% for cell in row.cells %}
+            {% if cell.type == "booking" %}
+              <td rowspan="{{ cell.rowspan }}">
+                <a class="bk {{ cell.booking.status }} {{ cell.booking.source }}" href="{% url 'dashboard:booking_detail' cell.booking.pk %}">
+                  <strong>{{ cell.booking.customer_name }}</strong>
+                  {{ cell.booking.start_at|time:"g:i" }}–{{ cell.booking.end_at|time:"g:i A" }}
+                  {% if cell.booking.invoice.balance %}<br><span style="color:var(--amber);font-weight:700">Due</span>{% endif %}
+                </a>
+              </td>
+            {% elif cell.type == "free" %}
+              <td class="{% if cell.past %}past{% endif %}">{% if not cell.past %}<a class="free" href="{% url 'dashboard:booking_create' %}?court={{ cell.court.slug }}&date={{ day.isoformat }}&time={{ cell.slot.value }}">+ {{ cell.slot.local_start|time:"g:i" }}</a>{% endif %}</td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr><td class="empty">Add a court to start taking bookings.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="legend" style="margin-top:1rem">
+  <span><i style="background:#e0e8ff;border-color:var(--court)"></i>Confirmed</span>
+  <span><i style="background:#fef3c7"></i>Pending</span>
+  <span><i style="background:repeating-linear-gradient(-45deg,#fffbeb,#fffbeb 3px,#fef3c7 3px,#fef3c7 6px);border-color:var(--amber)"></i>Awaiting payment</span>
+  <span><i style="background:#dcfce7"></i>Checked in</span>
+  <span><i style="background:#f1f5f9"></i>Completed</span>
+  <span style="color:var(--amber)">● Peak hours</span>
+</div>
+{% endblock %}

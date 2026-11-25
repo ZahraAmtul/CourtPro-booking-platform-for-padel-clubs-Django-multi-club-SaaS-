@@ -1,0 +1,114 @@
+{% extends "base.html" %}{% load club %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div>
+      <span class="pill">🎾 Online booking · Instant confirmation</span>
+      <h1 style="margin-top:1.1rem">Play padel at <span>{{ club.club_name }}</span></h1>
+      <p class="lead">{{ club.tagline }} Pick a court, choose your time, and you're on — no calls, no waiting.</p>
+      <div class="row" style="margin-top:1.75rem">
+        <a href="{% url 'bookings:book' %}" class="btn btn-primary btn-lg">Book a court</a>
+        <a href="#courts" class="btn btn-lg" style="color:#fff;border-color:rgba(255,255,255,.25)">View courts</a>
+      </div>
+      <div class="hero-stats">
+        <div><strong>{{ courts|length }}</strong><span>Professional courts</span></div>
+        <div><strong>{{ club.open_time|time:"g A" }} – {{ club.close_time|time:"g A" }}</strong><span>Open every day</span></div>
+        {% if from_price %}<div><strong>{{ from_price|money }}</strong><span>Per hour, from</span></div>{% endif %}
+      </div>
+    </div>
+    <svg class="court-art" viewBox="0 0 400 260" aria-hidden="true">
+      <rect x="10" y="10" width="380" height="240" rx="10" fill="#1f4fd1"/>
+      <rect x="10" y="10" width="380" height="240" rx="10" fill="none" stroke="#9fb6ff" stroke-opacity=".5" stroke-width="8"/>
+      <g stroke="#fff" stroke-width="2.5" fill="none" opacity=".95">
+        <rect x="30" y="30" width="340" height="200"/>
+        <line x1="200" y1="22" x2="200" y2="238" stroke-width="5"/>
+        <line x1="86" y1="30" x2="86" y2="230"/><line x1="314" y1="30" x2="314" y2="230"/>
+        <line x1="86" y1="130" x2="314" y2="130"/>
+      </g>
+      <circle cx="252" cy="88" r="9" fill="#c6f04d"/>
+      <path d="M245 84c4 2 4 6 0 9M259 84c-4 2-4 6 0 9" stroke="#8ab31e" stroke-width="1.5" fill="none"/>
+    </svg>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>On court in three taps</h2>
+    </div>
+    <div class="grid-3">
+      <div class="step"><div class="step-num">1</div><div><h3>Pick your slot</h3><p class="muted">See live availability for every court and choose 60, 90 or 120 minutes.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div><h3>Add extras</h3><p class="muted">Rent rackets, grab balls, apply a promo code — all in one checkout.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div><h3>Show up &amp; play</h3><p class="muted">Get your booking reference and invoice instantly. Pay at the club or online.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt" id="courts">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Our courts</span>
+      <h2>Built for great games</h2>
+      <p class="muted">Every court is maintained daily, with professional turf and lighting for night games.</p>
+    </div>
+    <div class="grid-3">
+      {% for court in courts %}
+      <article class="card court-card">
+        <div class="cover">
+          {% if court.image %}<img src="{{ court.image.url }}" alt="{{ court.name }}">{% else %}
+          <svg viewBox="0 0 300 150" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <rect width="300" height="150" fill="{% cycle '#1f4fd1' '#0f766e' '#4338ca' %}"/>
+            <g stroke="#fff" stroke-opacity=".7" stroke-width="2" fill="none"><rect x="40" y="25" width="220" height="100"/><line x1="150" y1="20" x2="150" y2="130" stroke-width="4"/><line x1="85" y1="25" x2="85" y2="125"/><line x1="215" y1="25" x2="215" y2="125"/><line x1="85" y1="75" x2="215" y2="75"/></g>
+          </svg>{% endif %}
+          <span class="badge badge-plain">{{ court.get_court_type_display }}</span>
+        </div>
+        <div class="body">
+          <h3>{{ court.name }}</h3>
+          {% if court.description %}<p class="muted small">{{ court.description }}</p>{% endif %}
+          {% if court.feature_list %}<ul class="features">{% for f in court.feature_list %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+          <div class="prices">
+            <div><small>Off-peak / hr</small><strong>{{ court.price_off_peak|money }}</strong></div>
+            <div><small>Peak / hr</small><strong>{{ court.price_peak|money }}</strong></div>
+          </div>
+          <a class="btn btn-dark btn-block" href="{{ court.get_absolute_url }}">Check availability</a>
+        </div>
+      </article>
+      {% empty %}
+      <p class="muted">Courts are coming soon.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="container grid-2" style="align-items:start">
+    <div>
+      <span class="eyebrow">Simple pricing</span>
+      <h2>Pay for the time you play</h2>
+      <p class="muted">Prices are per court (up to 4 players). Peak hours run <strong>{{ club.peak_start|time:"g:i A" }} – {{ club.peak_end|time:"g:i A" }}</strong>{% if club.weekend_all_day_peak %} and all day on weekends{% endif %}. Off-peak slots are the best value — perfect for morning and afternoon games.</p>
+      <ul class="muted" style="padding-left:1.1rem">
+        <li>Free cancellation up to {{ club.cancellation_hours }} hours before your game</li>
+        <li>Book up to {{ club.booking_window_days }} days ahead</li>
+        <li>Instant invoice for every booking</li>
+      </ul>
+    </div>
+    {% if extras %}
+    <div class="card">
+      <h3>Extras &amp; rentals</h3>
+      <p class="muted small">Add these while booking or ask at reception.</p>
+      {% for extra in extras %}
+      <div class="extra-item"><div><strong>{{ extra.name }}</strong>{% if extra.description %}<div class="muted small">{{ extra.description }}</div>{% endif %}</div><strong>{{ extra.price|money }}</strong></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="container">
+  <div class="cta-band">
+    <div><h2 style="margin:0 0 .35rem">Ready for your next match?</h2><p>Grab a court before the evening slots fill up.</p></div>
+    <a href="{% url 'bookings:book' %}" class="btn btn-primary btn-lg">Book now</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}Customers{% endblock %}
+{% block heading %}Customers{% endblock %}
+{% block subheading %}Everyone who has booked, grouped by phone number{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <form method="get" class="filters">
+      <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Name or phone">
+      <select name="sort" onchange="this.form.submit()">
+        <option value="">Most games</option>
+        <option value="spent" {% if request.GET.sort == "spent" %}selected{% endif %}>Highest spend</option>
+        <option value="recent" {% if request.GET.sort == "recent" %}selected{% endif %}>Most recent</option>
+      </select>
+      <button class="btn btn-dark btn-sm">Search</button>
+    </form>
+  </div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Customer</th><th>Games</th><th>No-shows</th><th>Last booking</th><th class="num">Total paid</th><th class="num">Credit</th><th></th></tr></thead>
+    <tbody>
+      {% for c in page %}
+      <tr>
+        <td><strong>{{ c.name }}</strong><div class="muted small">{{ c.customer_phone }}{% if c.email %} · {{ c.email }}{% endif %}</div></td>
+        <td>{{ c.visits }}{% if c.visits >= 5 %} <span class="badge badge-green badge-plain">Regular</span>{% endif %}</td>
+        <td>{% if c.no_shows %}<span class="badge badge-red badge-plain">{{ c.no_shows }}</span>{% else %}—{% endif %}</td>
+        <td>{{ c.last_visit|date:"j M Y" }}</td>
+        <td class="num">{{ c.spent|money }}</td>
+        <td class="num">{% if c.wallet %}<a href="{% url 'dashboard:credit_detail' c.wallet.pk %}"><strong>{{ c.wallet.balance|money }}</strong></a>{% else %}<a class="small" href="{% url 'dashboard:credit_list' %}?name={{ c.name|urlencode }}&phone={{ c.customer_phone|urlencode }}#sell">Sell credit</a>{% endif %}</td>
+        <td class="num"><a class="btn btn-ghost btn-sm" href="{% url 'dashboard:booking_list' %}?q={{ c.customer_phone|urlencode }}">Bookings</a>
+          <a class="btn btn-whatsapp btn-sm" href="https://wa.me/{{ c.customer_phone|wa_phone }}" target="_blank" rel="noopener">WhatsApp</a></td>
+      </tr>
+      {% empty %}<tr><td colspan="7" class="empty">No customers yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

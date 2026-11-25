@@ -1,0 +1,58 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ platform_name }}: court booking, deposits and WhatsApp reminders for padel clubs{% endblock %}</title>
+  <meta name="description" content="{% block description %}Give your padel club its own booking site. Players book and pay a deposit online, reminders go out on WhatsApp, and you see every rupee at the end of the day.{% endblock %}">
+  <meta property="og:title" content="{{ platform_name }} for padel clubs">
+  <meta property="og:description" content="Online booking, JazzCash deposits, WhatsApp reminders and a cash report for padel clubs in Pakistan.">
+  <meta name="theme-color" content="#1D55C9">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231D55C9'/%3E%3Cpath d='M5 8h22v16H5zM16 6v20M10 8v16M22 8v16M10 16h12' stroke='white' stroke-width='1.8' fill='none'/%3E%3Ccircle cx='19' cy='12' r='2.4' fill='%23D9F24F'/%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'fonts/bricolage-grotesque-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/platform.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="pf">
+<a class="pf-skip" href="#main">Skip to content</a>
+<header class="pf-header" id="top">
+  <div class="pf-wrap pf-header-row">
+    <a class="pf-brand" href="{% url 'platform_landing' %}" aria-label="{{ platform_name }} home">
+      <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 0v22M7 1v20M23 1v20M7 11h16" stroke="currentColor" stroke-width="1.5"/><circle cx="19.5" cy="6.5" r="2.6" fill="#D9F24F"/></svg>
+      {{ platform_name }}
+    </a>
+    <button class="pf-menu" aria-expanded="false" aria-controls="pf-nav" onclick="const n=document.getElementById('pf-nav');n.classList.toggle('open');this.setAttribute('aria-expanded',n.classList.contains('open'))">Menu</button>
+    <nav class="pf-nav" id="pf-nav" aria-label="Main">
+      <a href="{% url 'platform_landing' %}#leaks">Why clubs switch</a>
+      <a href="{% url 'platform_landing' %}#pricing">Pricing</a>
+      <a href="{% url 'platform_landing' %}#faq">Questions</a>
+      {% if user.is_superuser %}<a href="{% url 'platform_admin' %}">Platform admin</a>{% endif %}
+      <a href="{% url 'platform_club_login' %}">Club login</a>
+      <a class="pf-btn pf-btn-ball pf-btn-sm" href="{% url 'platform_signup' %}">Start free trial</a>
+    </nav>
+  </div>
+</header>
+{% if messages %}<div class="messages">{% for m in messages %}<div class="message {{ m.tags }}">{{ m }}</div>{% endfor %}</div>{% endif %}
+<main id="main">{% block content %}{% endblock %}</main>
+<footer class="pf-footer">
+  <div class="pf-wrap pf-footer-grid">
+    <div>
+      <a class="pf-brand" href="{% url 'platform_landing' %}">
+        <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 0v22M7 1v20M23 1v20M7 11h16" stroke="currentColor" stroke-width="1.5"/><circle cx="19.5" cy="6.5" r="2.6" fill="#D9F24F"/></svg>
+        {{ platform_name }}
+      </a>
+      <p>Booking, deposits, WhatsApp reminders and cash control for padel clubs in Pakistan.</p>
+    </div>
+    <nav aria-label="Footer">
+      <a href="{% url 'platform_signup' %}">Start free trial</a>
+      <a href="{% url 'platform_club_login' %}">Club login</a>
+      <a href="{% url 'platform_landing' %}#pricing">Pricing</a>
+      <a href="{% url 'platform_landing' %}#faq">Questions</a>
+    </nav>
+    <p class="pf-copy">© {% now "Y" %} {{ platform_name }}</p>
+  </div>
+</footer>
+<script>setTimeout(() => document.querySelectorAll('.message').forEach(m => m.remove()), 6000);</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

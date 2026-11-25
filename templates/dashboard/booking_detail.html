@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}{{ booking.reference }}{% endblock %}
+{% block heading %}<span class="mono">{{ booking.reference }}</span> <span class="badge badge-{{ booking.status_color }}" style="vertical-align:middle">{{ booking.get_status_display }}</span>{% endblock %}
+{% block subheading %}{{ booking.court.name }} · {{ booking.start_at|date:"l j F" }}, {{ booking.start_at|time:"g:i A" }}–{{ booking.end_at|time:"g:i A" }}{% endblock %}
+{% block actions %}
+  <a class="btn btn-whatsapp btn-sm" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Send on WhatsApp</a>
+  <a class="btn btn-ghost btn-sm" href="{% url 'dashboard:schedule' %}?date={{ booking.business_date.isoformat }}">View on schedule</a>
+{% endblock %}
+{% block content %}
+{% if booking.awaiting_payment %}
+<div class="info-box warn">⏱ Waiting for online payment of <strong>{{ booking.prepayment_amount|money }}</strong> — slot is held until <strong>{{ booking.payment_due_at|time:"g:i A" }}</strong>. If they're paying cash at the desk, record the payment and it confirms automatically.</div>
+{% elif booking.status == "cancelled" or booking.status == "expired" %}{% if invoice.amount_paid and "[refund handled]" not in booking.notes %}
+<div class="info-box warn row between"><span>💸 This booking is {{ booking.get_status_display|lower }} but <strong>{{ invoice.amount_paid|money }}</strong> was paid. Give it back as club credit, or refund it and mark it handled.</span>
+  {% if club_role == "owner" %}<div class="row">
+    <form method="post" action="{% url 'dashboard:booking_refund_credit' booking.pk %}">{% csrf_token %}<button class="btn btn-blue btn-sm">Refund to club credit</button></form>
+    <form method="post" action="{% url 'dashboard:booking_refund_handled' booking.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-sm">Refunded in cash — mark handled</button></form>
+  </div>{% endif %}</div>
+{% endif %}{% endif %}
+{% if series_info %}
+<div class="info-box row between"><span>🔁 Weekly booking: <strong>{{ series_info.series.get_weekday_display }}s at {{ series_info.series.start_time|time:"g:i A" }}</strong> — this is week {{ series_info.position }} of {{ series_info.total }} ({{ series_info.remaining }} upcoming).
+  <a href="{% url 'dashboard:booking_list' %}?q={{ booking.customer_phone|urlencode }}">See all weeks</a></span>
+  {% if series_info.remaining %}<form method="post" action="{% url 'dashboard:series_cancel' series_info.series.pk %}" onsubmit="return confirm('Cancel all {{ series_info.remaining }} upcoming weeks?')">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-danger btn-sm">Cancel remaining weeks</button></form>{% endif %}</div>
+{% endif %}
+<div class="dash-grid">
+  <div>
+    {% if next_statuses %}
+    <div class="panel"><div class="panel-head"><h3>Actions</h3></div><div class="panel-body">
+      <form method="post" action="{% url 'dashboard:booking_status' booking.pk %}" class="status-actions">{% csrf_token %}
+        {% for value, label in next_statuses %}
+          <button name="status" value="{{ value }}" class="btn btn-sm {% if value == 'cancelled' or value == 'no_show' %}btn-danger{% elif value == 'checked_in' or value == 'confirmed' %}btn-blue{% else %}btn-ghost{% endif %}"
+            {% if value == 'cancelled' %}onclick="return confirm('Cancel this booking? The slot will be released.')"{% endif %}>
+            {% if value == 'checked_in' %}✓ Check in{% elif value == 'completed' %}Mark completed{% elif value == 'confirmed' %}✓ Confirm{% elif value == 'no_show' %}No-show{% elif value == 'cancelled' %}Cancel booking{% else %}{{ label }}{% endif %}
+          </button>
+        {% endfor %}
+      </form>
+    </div></div>
+    {% endif %}
+
+    <div class="panel"><div class="panel-head"><h3>Booking details</h3></div><div class="panel-body">
+      <dl class="kv">
+        <dt>Customer</dt><dd>{{ booking.customer_name }}{% if booking.customer %} <span class="badge badge-blue badge-plain">Member</span>{% endif %}</dd>
+        <dt>Phone</dt><dd><a href="tel:{{ booking.customer_phone }}">{{ booking.customer_phone }}</a></dd>
+        <dt>Email</dt><dd>{{ booking.customer_email|default:"—" }}</dd>
+        <dt>Court</dt><dd>{{ booking.court.name }}</dd>
+        <dt>Time</dt><dd>{{ booking.start_at|date:"D j M Y" }}, {{ booking.start_at|time:"g:i A" }}–{{ booking.end_at|time:"g:i A" }} ({{ booking.duration_minutes|duration }})</dd>
+        <dt>Players</dt><dd>{{ booking.players }}</dd>
+        <dt>Source</dt><dd>{{ booking.get_source_display }}{% if booking.created_by %} · by {{ booking.created_by.first_name|default:booking.created_by.username }}{% endif %}</dd>
+        {% if booking.promo_code %}<dt>Promo</dt><dd>{{ booking.promo_code.code }} (−{{ booking.discount_amount|money }})</dd>{% endif %}
+        {% for be in extras %}<dt>{% if forloop.first %}Extras{% endif %}</dt><dd>{{ be.quantity }} × {{ be.extra.name }} · {{ be.line_total|money }}</dd>{% endfor %}
+        {% if booking.notes %}<dt>Notes</dt><dd>{{ booking.notes|linebreaksbr }}</dd>{% endif %}
+        {% if booking.cancel_reason %}<dt>Cancelled</dt><dd>{{ booking.cancelled_at|date:"j M, g:i A" }} — {{ booking.cancel_reason }}</dd>{% endif %}
+      </dl>
+      <hr class="divider">
+      {% if notifications %}
+      <h4 style="font-size:.85rem;margin:0 0 .5rem">Messages sent</h4>
+      <div class="timeline" style="margin-bottom:1rem">
+        {% for n in notifications %}<div>{% if n.state == "sent" %}✅{% else %}⚠️{% endif %} {{ n.get_kind_display }} · {{ n.get_channel_display }} · {{ n.updated_at|date:"j M, g:i A" }}{% if n.error %} — <span style="color:var(--red)">{{ n.error }}</span>{% endif %}</div>{% endfor %}
+      </div>
+      {% endif %}
+      <div class="timeline"><div>Created {{ booking.created_at|date:"j M Y, g:i A" }}</div><div>Last updated {{ booking.updated_at|date:"j M Y, g:i A" }}</div></div>
+    </div></div>
+  </div>
+
+  <div>
+    {% if invoice %}
+    <div class="panel">
+      <div class="panel-head"><h3>Invoice {{ invoice.number }}</h3><span class="badge badge-{{ invoice.status_color }}">{{ invoice.get_status_display }}</span></div>
+      <div class="panel-body">
+        <div class="summary-line"><span>Subtotal</span><span>{{ invoice.subtotal|money }}</span></div>
+        {% if invoice.discount %}<div class="summary-line"><span>Discount</span><span>−{{ invoice.discount|money }}</span></div>{% endif %}
+        {% if invoice.tax_amount %}<div class="summary-line"><span>{{ club.tax_label }}</span><span>{{ invoice.tax_amount|money }}</span></div>{% endif %}
+        <div class="summary-line total"><span>Total</span><span>{{ invoice.total|money }}</span></div>
+        <div class="summary-line"><span>Paid</span><span>{{ invoice.amount_paid|money }}</span></div>
+        <div class="summary-line" style="font-weight:800"><span>Balance</span><span>{{ invoice.balance|money }}</span></div>
+        <div class="row" style="margin-top:1rem">
+          <a class="btn btn-ghost btn-sm" href="{% url 'dashboard:invoice_detail' invoice.pk %}">Open invoice</a>
+          <a class="btn btn-ghost btn-sm" href="{% url 'billing:public_invoice' invoice.token %}" target="_blank">Print</a>
+        </div>
+        {% if pay_link %}
+        <div class="field" style="margin-top:1rem"><label class="small muted">Online payment link (send to customer)</label>
+          <div class="row" style="flex-wrap:nowrap"><input value="{{ pay_link }}" readonly onclick="this.select()" style="flex:1;padding:.5rem;border:1px solid var(--line);border-radius:8px;font-size:.8rem">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('{{ pay_link }}');this.textContent='Copied'">Copy</button></div></div>
+        {% endif %}
+        {% for op in online_payments %}<div class="small muted" style="margin-top:.4rem">{{ op.created_at|date:"j M g:i A" }} · {{ op.gateway }} · {{ op.amount|money }} · {{ op.get_state_display }}{% if op.response_message and op.state == "failed" %} ({{ op.response_message }}){% endif %}</div>{% endfor %}
+      </div>
+    </div>
+    {% if invoice.balance and wallet.balance and booking.is_active %}
+    <div class="panel"><div class="panel-body row between">
+      <span>💳 <strong>{{ wallet.name }}</strong> has <strong>{{ wallet.balance|money }}</strong> club credit</span>
+      <form method="post" action="{% url 'dashboard:booking_pay_credit' booking.pk %}">{% csrf_token %}<button class="btn btn-blue btn-sm">Pay from credit</button></form>
+    </div></div>
+    {% endif %}
+    {% if invoice.balance %}
+    {% include "dashboard/_payment_form.html" with next=request.path %}
+    {% endif %}
+    {% if payments %}
+    <div class="panel"><div class="panel-head"><h3>Payments</h3></div><div class="panel-body" style="padding-block:.5rem">
+      {% for p in payments %}<div class="summary-line"><span>{{ p.paid_at|date:"j M, g:i A" }} · {{ p.get_method_display }}</span><strong>{{ p.amount|money }}</strong></div>{% endfor %}
+    </div></div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

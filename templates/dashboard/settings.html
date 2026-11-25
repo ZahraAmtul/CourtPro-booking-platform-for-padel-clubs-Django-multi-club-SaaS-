@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Settings{% endblock %}
+{% block heading %}Club settings{% endblock %}
+{% block subheading %}Everything here updates the website and invoices immediately{% endblock %}
+{% block actions %}{% endblock %}
+{% block content %}
+<form method="post" class="form" style="max-width:900px">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  {% for title, fields in form.grouped %}
+  <div class="panel"><div class="panel-head"><h3>{{ title }}</h3></div><div class="panel-body">
+    {% if title == "Online payments" %}
+    <div class="info-box">
+      Customers pay a deposit (or the full amount) when booking online. Unpaid bookings hold the slot for the hold time, then it's released automatically — no more empty courts from no-shows.
+      <br><strong>JazzCash setup:</strong> in your JazzCash merchant portal set the <em>Return URL</em> to <code>{{ return_url }}</code> and the <em>IPN URL</em> to <code>{{ ipn_url }}</code>. Test with sandbox credentials first.
+    </div>
+    {% elif title == "WhatsApp confirmations & reminders" %}
+    {% if not tenant.has_whatsapp %}<div class="info-box warn">Automatic WhatsApp messages are part of the Pro plan. <a href="{% url 'dashboard:subscription' %}">Upgrade</a> to switch them on.</div>{% endif %}
+    <div class="info-box">
+      Messages go from <strong>your own WhatsApp Business number</strong> (Meta Cloud API), so Meta bills your account directly. Create the two templates shown in the README in WhatsApp Manager, wait for approval, then paste the phone number ID and a permanent access token here.
+    </div>
+    {% endif %}
+    <div class="form-grid">{% for field in fields %}{% include "partials/field.html" %}{% endfor %}</div>
+  </div></div>
+  {% endfor %}
+  <button class="btn btn-blue btn-lg" style="margin-top:1rem">Save settings</button>
+</form>
+
+<form method="post" class="form panel" style="max-width:900px;margin-top:1.5rem">
+  {% csrf_token %}
+  <div class="panel-head"><h3>Test WhatsApp connection</h3></div>
+  <div class="panel-body row" style="align-items:end">
+    <div class="field" style="flex:1;margin:0"><label for="test_phone">Send Meta's "hello_world" test message to</label><input id="test_phone" name="test_phone" placeholder="0300 1234567"></div>
+    <button name="test_whatsapp" value="1" class="btn btn-whatsapp">Send test</button>
+  </div>
+</form>
+{% endblock %}

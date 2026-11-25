@@ -1,0 +1,21 @@
+{% load club %}<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo payment gateway</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#eef1f6;margin:0;display:grid;place-items:center;min-height:100vh;color:#0f172a}
+  .box{background:#fff;border-radius:16px;padding:2rem;width:min(420px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .tag{display:inline-block;background:#fef3c7;color:#92400e;font-weight:700;font-size:.75rem;padding:.25rem .6rem;border-radius:999px}
+  .amt{font-size:2rem;font-weight:800;margin:.75rem 0}
+  button{width:100%;padding:.85rem;border-radius:10px;border:0;font-size:1rem;font-weight:700;cursor:pointer;margin-top:.6rem}
+  .ok{background:#16a34a;color:#fff}.no{background:#fff;border:1px solid #fecaca;color:#b91c1c}
+  p{color:#64748b;font-size:.9rem}
+</style></head><body>
+<div class="box">
+  <span class="tag">DEMO MODE — no real money</span>
+  <div class="amt">{{ attempt.amount|money }}</div>
+  <p>Invoice {{ attempt.invoice.number }} · Ref {{ attempt.reference }}</p>
+  <form method="post" action="{{ return_url }}"><input type="hidden" name="token" value="{{ success_token }}"><button class="ok">Approve payment</button></form>
+  <form method="post" action="{{ return_url }}"><input type="hidden" name="token" value="{{ fail_token }}"><button class="no">Decline payment</button></form>
+  <p>Switch to JazzCash in Dashboard → Settings → Online payments to take real payments.</p>
+</div>
+</body></html>

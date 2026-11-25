@@ -1,0 +1,34 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}Subscription{% endblock %}
+{% block heading %}Subscription{% endblock %}
+{% block subheading %}Your {{ platform_name }} plan{% endblock %}
+{% block actions %}{% endblock %}
+{% block content %}
+{% with st=tenant.subscription_state %}
+<div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+  <div class="kpi accent"><div class="label">Current plan</div><div class="value">{{ tenant.plan_info.label }}</div><div class="hint">{{ tenant.monthly_price|money }} / month</div></div>
+  <div class="kpi"><div class="label">Status</div><div class="value" style="text-transform:capitalize">{{ st }}</div><div class="hint">{% if st == "trial" %}Free trial until {{ tenant.trial_ends_at|date:"j M Y" }}{% elif tenant.paid_until %}Paid until {{ tenant.paid_until|date:"j M Y" }}{% endif %}</div></div>
+  <div class="kpi"><div class="label">Courts</div><div class="value">{{ courts_used }}{% if tenant.max_courts %} / {{ tenant.max_courts }}{% endif %}</div><div class="hint">{% if tenant.max_courts %}included in your plan{% else %}unlimited{% endif %}</div></div>
+</div>
+{% endwith %}
+<div class="dash-grid">
+  <div class="panel"><div class="panel-head"><h3>Plans</h3></div><div class="panel-body grid-2">
+    {% for key, plan in plans.items %}
+    <div class="card card-flat" {% if key == tenant.plan %}style="border:2px solid var(--court)"{% endif %}>
+      <h3>{{ plan.label }} {% if key == tenant.plan %}<span class="badge badge-blue badge-plain">Current</span>{% endif %}</h3>
+      <p style="font-size:1.6rem;font-weight:800;margin:.25rem 0">{{ plan.price|money }}<span class="muted" style="font-size:.9rem"> / month</span></p>
+      <p class="muted small">{{ plan.blurb }}</p>
+      {% if key != tenant.plan %}<a class="btn btn-ghost btn-sm" href="https://wa.me/{{ support_whatsapp }}?text={{ 'Hi, please switch '|urlencode }}{{ tenant.name|urlencode }}{{ ' to the '|urlencode }}{{ plan.label|urlencode }}{{ ' plan.'|urlencode }}" target="_blank" rel="noopener">Switch to {{ plan.label }}</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div></div>
+  <div class="panel"><div class="panel-head"><h3>How to pay</h3></div><div class="panel-body">
+    <p>{{ payment_instructions }}</p>
+    <p class="muted small">Your plan is extended as soon as we confirm the payment.</p>
+    <div class="row">
+      <a class="btn btn-whatsapp btn-sm" href="https://wa.me/{{ support_whatsapp }}?text={{ 'Payment for '|urlencode }}{{ tenant.name|urlencode }}" target="_blank" rel="noopener">Send receipt on WhatsApp</a>
+      <a class="btn btn-ghost btn-sm" href="mailto:{{ support_email }}">{{ support_email }}</a>
+    </div>
+  </div></div>
+</div>
+{% endblock %}

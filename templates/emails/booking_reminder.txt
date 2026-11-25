@@ -1,0 +1,11 @@
+Hi {{ booking.customer_name }},
+
+Reminder: you're playing padel at {{ club.club_name }} {% if kind == "reminder_24h" %}tomorrow{% else %}soon{% endif %}.
+
+Court: {{ booking.court.name }}
+When:  {{ booking.start_at|date:"l, j F" }}, {{ booking.start_at|time:"g:i A" }} – {{ booking.end_at|time:"g:i A" }}
+Ref:   {{ booking.reference }}
+
+Can't make it? Manage your booking: {{ booking_url }}
+
+{{ club.club_name }} · {{ club.address }} · {{ club.phone }}

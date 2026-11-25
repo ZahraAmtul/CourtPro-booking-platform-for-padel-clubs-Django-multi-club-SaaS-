@@ -1,0 +1,15 @@
+{% extends "platform/base.html" %}
+{% block title %}Club login · {{ platform_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Log in to your club</h1><p>Each club has its own address. Enter yours and we'll take you to your login page.</p></div></div>
+<div class="narrow page-body">
+  <form method="get" class="card form">
+    <div class="field">
+      <label for="club">Your club address</label>
+      <div class="row" style="flex-wrap:nowrap;gap:.4rem"><input id="club" name="club" value="{{ value }}" placeholder="smash" autofocus required><span class="muted" style="white-space:nowrap">.{{ domain }}</span></div>
+    </div>
+    <button class="btn btn-dark btn-block">Go to my club</button>
+    <p class="muted small" style="margin:1rem 0 0">Don't have a club yet? <a href="{% url 'platform_signup' %}">Start a free trial</a>.</p>
+  </form>
+</div>
+{% endblock %}

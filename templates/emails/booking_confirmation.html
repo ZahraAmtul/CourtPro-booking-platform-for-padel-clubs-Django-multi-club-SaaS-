@@ -1,0 +1,24 @@
+{% load club %}<!DOCTYPE html>
+<html><body style="margin:0;background:#f6f8fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0"><tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0">
+  <tr><td style="background:#0b1b2e;color:#fff;padding:22px 28px;font-size:18px;font-weight:bold">{{ club.club_name }}</td></tr>
+  <tr><td style="padding:28px">
+    <p style="font-size:20px;font-weight:bold;margin:0 0 6px">Your court is {{ booking.get_status_display|lower }} 🎾</p>
+    <p style="color:#64748b;margin:0 0 20px">Hi {{ booking.customer_name }}, here are your booking details.</p>
+    <table width="100%" cellpadding="6" style="font-size:14px;background:#f6f8fb;border-radius:10px">
+      <tr><td style="color:#64748b">Reference</td><td style="font-weight:bold;letter-spacing:2px">{{ booking.reference }}</td></tr>
+      <tr><td style="color:#64748b">Court</td><td>{{ booking.court.name }}</td></tr>
+      <tr><td style="color:#64748b">Date</td><td>{{ booking.business_date|date:"l, j F Y" }}</td></tr>
+      <tr><td style="color:#64748b">Time</td><td>{{ booking.start_at|time:"g:i A" }} – {{ booking.end_at|time:"g:i A" }}</td></tr>
+      <tr><td style="color:#64748b">Total</td><td style="font-weight:bold">{{ booking.invoice.total|money }}</td></tr>
+    </table>
+    <p style="margin:24px 0">
+      <a href="{{ booking_url }}" style="background:#c6f04d;color:#0b1b2e;padding:12px 20px;border-radius:999px;font-weight:bold;text-decoration:none">Manage booking</a>
+      &nbsp; <a href="{{ invoice_url }}" style="color:#1f4fd1;font-weight:bold">View invoice</a>
+    </p>
+    <p style="color:#64748b;font-size:13px">{{ club.payment_instructions }}<br>Free cancellation up to {{ club.cancellation_hours }} hours before your game.</p>
+  </td></tr>
+  <tr><td style="padding:16px 28px;background:#f6f8fb;color:#64748b;font-size:12px">{{ club.address }} · {{ club.phone }}</td></tr>
+</table></td></tr></table>
+</body></html>

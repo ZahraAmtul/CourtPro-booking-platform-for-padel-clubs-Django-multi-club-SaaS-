@@ -1,0 +1,132 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}Overview{% endblock %}
+{% block heading %}Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}evening{% endif %}, {{ user.first_name|default:"there" }}{% endblock %}
+{% block subheading %}{{ today|date:"l, j F Y" }} · here's how the club is doing{% endblock %}
+{% block content %}
+{% if unclosed_day %}
+<div class="info-box warn">💵 Cash for <strong>{{ unclosed_day|date:"l j M" }}</strong> hasn't been counted yet. <a href="{% url 'dashboard:cash_report' %}?date={{ unclosed_day.isoformat }}">Count &amp; close the day →</a></div>
+{% endif %}
+{% if request.GET.welcome %}
+<div class="info-box">🎉 <strong>Welcome to {{ platform_name }}!</strong> Your booking site is live at <a href="{{ tenant.base_url }}" target="_blank">{{ tenant.host }}</a>. Next: <a href="{% url 'dashboard:catalog_list' 'courts' %}">set your courts &amp; prices</a>, check <a href="{% url 'dashboard:settings' %}">opening hours</a>, then <a href="{% url 'dashboard:team' %}">add your reception staff</a>.</div>
+{% endif %}
+<div class="kpis">
+  <div class="kpi accent"><div class="label">Collected today</div><div class="value">{{ revenue_today|money }}</div><div class="hint">{{ revenue_month|money }} this month</div></div>
+  <div class="kpi"><div class="label">Bookings today</div><div class="value">{{ todays|length }}</div><div class="hint">Across all courts</div></div>
+  <div class="kpi"><div class="label">Occupancy today</div><div class="value">{{ occupancy }}%</div><div class="hint">Of available court hours</div></div>
+  <div class="kpi"><div class="label">Outstanding</div><div class="value">{{ outstanding|money }}</div><div class="hint"><a href="{% url 'dashboard:invoice_list' %}?status=unpaid">{{ open_invoice_count }} open invoice{{ open_invoice_count|pluralize }}</a></div></div>
+</div>
+
+<div class="dash-grid">
+  <div>
+    {% if refunds_due %}
+    <div class="panel" style="border-color:#fecaca">
+      <div class="panel-head"><h3>💸 Paid but cancelled — refund or credit</h3><span class="badge badge-red">{{ refunds_due|length }}</span></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for b in refunds_due %}
+        <tr class="link-row" data-href="{% url 'dashboard:booking_detail' b.pk %}"><td><strong>{{ b.customer_name }}</strong><div class="muted small">{{ b.customer_phone }}</div></td>
+          <td>{{ b.court.name }}<div class="muted small">{{ b.start_at|date:"D j M" }}, {{ b.get_status_display }}</div></td>
+          <td class="num"><strong>{{ b.invoice.amount_paid|money }}</strong></td></tr>
+        {% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+
+    {% if awaiting %}
+    <div class="panel">
+      <div class="panel-head"><h3>⏱ Waiting for online payment</h3><span class="muted small">released automatically if unpaid</span></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for b in awaiting %}
+        <tr class="link-row" data-href="{% url 'dashboard:booking_detail' b.pk %}"><td><strong>{{ b.customer_name }}</strong><div class="muted small">{{ b.customer_phone }}</div></td>
+          <td>{{ b.court.name }}<div class="muted small">{{ b.start_at|date:"D j M" }}, {{ b.start_at|time:"g:i A" }}</div></td>
+          <td class="num">{{ b.prepayment_amount|money }}<div class="muted small">hold until {{ b.payment_due_at|time:"g:i A" }}</div></td></tr>
+        {% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+
+    {% if pending %}
+    <div class="panel" style="border-color:#fcd34d">
+      <div class="panel-head"><h3>⏳ Waiting for your approval</h3><span class="badge badge-amber">{{ pending|length }}</span></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for b in pending %}
+        <tr><td><strong>{{ b.customer_name }}</strong><div class="muted small">{{ b.customer_phone }}</div></td>
+          <td>{{ b.court.name }}<div class="muted small">{{ b.start_at|date:"D j M" }}, {{ b.start_at|time:"g:i A" }}</div></td>
+          <td class="num">
+            <form method="post" action="{% url 'dashboard:booking_status' b.pk %}" class="row" style="justify-content:flex-end">{% csrf_token %}
+              <input type="hidden" name="next" value="{% url 'dashboard:overview' %}">
+              <button name="status" value="confirmed" class="btn btn-blue btn-sm">Confirm</button>
+              <button name="status" value="cancelled" class="btn btn-danger btn-sm">Decline</button>
+            </form></td></tr>
+        {% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+
+    <div class="panel">
+      <div class="panel-head"><h3>Today's games</h3><a class="btn btn-ghost btn-sm" href="{% url 'dashboard:schedule' %}">Open schedule →</a></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Time</th><th>Court</th><th>Customer</th><th>Status</th><th class="num">Balance</th></tr></thead>
+        <tbody>
+        {% for b in todays %}
+          <tr class="link-row" data-href="{% url 'dashboard:booking_detail' b.pk %}">
+            <td><strong>{{ b.start_at|time:"g:i A" }}</strong><div class="muted small">{{ b.duration_minutes|duration }}</div></td>
+            <td>{{ b.court.name }}</td>
+            <td>{{ b.customer_name }}<div class="muted small">{{ b.customer_phone }}</div></td>
+            <td><span class="badge badge-{{ b.status_color }}">{{ b.get_status_display }}</span></td>
+            <td class="num">{% if b.invoice.balance %}<strong style="color:var(--amber)">{{ b.invoice.balance|money }}</strong>{% else %}<span class="badge badge-green badge-plain">Paid</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty">No games today yet. <a href="{% url 'dashboard:booking_create' %}">Add a walk-in →</a></td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Revenue · last 14 days</h3>{% if club_role == "owner" %}<a class="small" href="{% url 'dashboard:export_invoices' %}">Export invoices CSV</a>{% endif %}</div>
+      <div class="panel-body">
+        <div class="bars">
+          {% for d in chart %}
+          <div class="bar{% if forloop.last %} today{% endif %}" title="{{ d.day|date:'D j M' }}: {{ d.value|money }}">
+            <i style="height:{{ d.pct }}%"></i><small>{{ d.day|date:"j" }}</small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel-head"><h3>Up next</h3></div>
+      <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+        {% for b in upcoming %}
+        <a href="{% url 'dashboard:booking_detail' b.pk %}" class="row between" style="padding:.6rem 0;border-bottom:1px solid #f1f5f9;color:inherit;text-decoration:none">
+          <div><strong>{{ b.start_at|time:"g:i A" }}</strong> <span class="muted small">{{ b.start_at|date:"D j M" }}</span><div class="small">{{ b.customer_name }} · {{ b.court.name }}</div></div>
+          <span class="badge badge-{{ b.status_color }}">{{ b.get_status_display }}</span>
+        </a>
+        {% empty %}<p class="muted">Nothing scheduled.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Busiest hours</h3><span class="muted small">last 30 days</span></div>
+      <div class="panel-body">
+        {% for h in busiest %}
+        <div class="hbar"><span class="muted">{{ h.hour|stringformat:"02d" }}:00</span><div class="track"><div class="fill" style="width:{{ h.pct }}%"></div></div><span>{{ h.count }}</span></div>
+        {% endfor %}
+        {% if club_role == "owner" %}<p class="muted small" style="margin:.75rem 0 0">Tip: quiet hours are perfect for a promo code — <a href="{% url 'dashboard:catalog_create' 'promos' %}">create one</a>.</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Top regulars</h3><a class="small" href="{% url 'dashboard:customers' %}">All customers</a></div>
+      <div class="panel-body" style="padding-top:.5rem;padding-bottom:.5rem">
+        {% for c in top_customers %}
+        <div class="row between" style="padding:.5rem 0;border-bottom:1px solid #f1f5f9"><div><strong>{{ c.name }}</strong><div class="muted small">{{ c.customer_phone }}</div></div><span class="badge badge-blue badge-plain">{{ c.visits }} games</span></div>
+        {% empty %}<p class="muted">No data yet.</p>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

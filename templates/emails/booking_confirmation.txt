@@ -1,0 +1,17 @@
+{% load club %}Hi {{ booking.customer_name }},
+
+Your booking at {{ club.club_name }} is {{ booking.get_status_display|lower }}.
+
+Reference: {{ booking.reference }}
+Court:     {{ booking.court.name }}
+Date:      {{ booking.business_date|date:"l, j F Y" }}
+Time:      {{ booking.start_at|time:"g:i A" }} – {{ booking.end_at|time:"g:i A" }}
+Total:     {{ booking.invoice.total|money }}
+
+View or cancel your booking: {{ booking_url }}
+Invoice: {{ invoice_url }}
+
+{{ club.payment_instructions }}
+Free cancellation up to {{ club.cancellation_hours }} hours before your game.
+
+{{ club.club_name }} · {{ club.address }} · {{ club.phone }}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load club %}
+{% block title %}My bookings · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container row between">
+  <div><h1 style="font-size:2.1rem">Hi {{ user.first_name|default:user.username }} 👋</h1><p>Your upcoming games and booking history.</p></div>
+  <div class="row"><a class="btn btn-sm" style="color:#fff;border-color:rgba(255,255,255,.25)" href="{% url 'accounts:profile' %}">Edit profile</a><a class="btn btn-primary" href="{% url 'bookings:book' %}">Book a court</a></div>
+</div></div>
+<div class="container page-body" style="width:min(860px,100% - 2.5rem)">
+  <h3 style="color:#fff">Upcoming</h3>
+  {% for b in upcoming %}{% include "accounts/_booking_row.html" %}{% empty %}
+  <div class="card empty">No upcoming games. <a href="{% url 'bookings:book' %}">Book one now →</a></div>
+  {% endfor %}
+  {% if past %}
+  <h3 style="margin-top:2rem">History</h3>
+  {% for b in past %}{% include "accounts/_booking_row.html" %}{% endfor %}
+  {% endif %}
+</div>
+{% endblock %}

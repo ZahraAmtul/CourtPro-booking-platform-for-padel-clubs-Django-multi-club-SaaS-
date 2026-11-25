@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}New booking{% endblock %}
+{% block heading %}New booking{% endblock %}
+{% block subheading %}Walk-in or phone booking — an invoice is created automatically{% endblock %}
+{% block actions %}<a class="btn btn-ghost btn-sm" href="{% url 'dashboard:schedule' %}">← Schedule</a>{% endblock %}
+{% block content %}
+<form method="post" class="form dash-grid">
+  {% csrf_token %}
+  <div>
+    <div class="panel"><div class="panel-head"><h3>Court &amp; time</h3></div><div class="panel-body">
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      <div class="form-grid">
+        {% include "partials/field.html" with field=form.court %}
+        {% include "partials/field.html" with field=form.business_date %}
+        {% include "partials/field.html" with field=form.start_time %}
+        {% include "partials/field.html" with field=form.duration %}
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-head"><h3>Customer</h3></div><div class="panel-body">
+      <div class="form-grid">
+        {% include "partials/field.html" with field=form.customer_name %}
+        {% include "partials/field.html" with field=form.customer_phone %}
+        {% include "partials/field.html" with field=form.customer_email %}
+        {% include "partials/field.html" with field=form.source %}
+        {% include "partials/field.html" with field=form.players %}
+        {% include "partials/field.html" with field=form.promo_code %}
+      </div>
+      {% include "partials/field.html" with field=form.notes %}
+      {% include "partials/field.html" with field=form.repeat_weeks %}
+    </div></div>
+  </div>
+  <div>
+    {% if form.extra_items %}
+    <div class="panel"><div class="panel-head"><h3>Extras</h3></div><div class="panel-body" style="padding-block:.25rem">
+      {% for extra, field in form.extra_fields %}
+      <div class="extra-row"><div><strong>{{ extra.name }}</strong><div class="muted small">{{ extra.price|money }}</div>{{ field.errors }}</div>{{ field }}</div>
+      {% endfor %}
+    </div></div>
+    {% endif %}
+    <div class="panel"><div class="panel-head"><h3>Payment</h3></div><div class="panel-body">
+      {% include "partials/field.html" with field=form.collect_payment %}
+      {% include "partials/field.html" with field=form.payment_method %}
+      <p class="muted small">Leave unticked to collect later — it will show as outstanding.</p>
+      <button class="btn btn-blue btn-block btn-lg">Create booking</button>
+    </div></div>
+  </div>
+</form>
+{% endblock %}

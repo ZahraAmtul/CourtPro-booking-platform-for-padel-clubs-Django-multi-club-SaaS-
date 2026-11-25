@@ -1,0 +1,28 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Team{% endblock %}
+{% block heading %}Team{% endblock %}
+{% block subheading %}Who can log in to this dashboard at {{ tenant.host }}{% endblock %}
+{% block actions %}{% endblock %}
+{% block content %}
+<div class="dash-grid">
+  <div class="panel"><div class="table-wrap"><table class="table">
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      <tr><td><strong>{{ m.user.get_full_name|default:m.user.first_name|default:"—" }}</strong></td><td>{{ m.user.email }}</td>
+        <td><span class="badge {% if m.role == 'owner' %}badge-blue{% else %}badge-slate{% endif %} badge-plain">{{ m.get_role_display }}</span></td>
+        <td class="num">{% if m.user != request.user %}<form method="post" action="{% url 'dashboard:team_remove' m.pk %}" onsubmit="return confirm('Remove access for {{ m.user.email|escapejs }}?')">{% csrf_token %}<button class="btn btn-danger btn-sm">Remove</button></form>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div></div>
+  <form method="post" class="panel form">{% csrf_token %}
+    <div class="panel-head"><h3>Add a team member</h3></div>
+    <div class="panel-body">
+      {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <p class="muted small"><strong>Staff</strong> can take bookings, check players in and record payments. Only <strong>owners</strong> can change prices &amp; settings, export data, void invoices and manage the team.</p>
+      <button class="btn btn-blue btn-block">Add to team</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

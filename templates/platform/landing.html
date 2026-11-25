@@ -1,0 +1,294 @@
+{% extends "platform/base.html" %}{% load club %}
+{% block content %}
+
+{# ------------------------------------------------------------------ Hero: a court seen from above #}
+<section class="pf-hero" aria-labelledby="hero-title">
+  <div class="pf-wrap">
+    <div class="pf-court">
+      <div class="pf-half pf-half-left">
+        <h1 id="hero-title"><span>Every court booked.</span> <span>Every rupee counted.</span></h1>
+        <p class="pf-lead">Give your padel club its own booking site. Players pick a slot, pay a deposit by JazzCash and get a WhatsApp reminder, so prime time doesn't sit empty because someone forgot.</p>
+        <div class="pf-cta-row">
+          <a class="pf-btn pf-btn-ball" href="{% url 'platform_signup' %}">Start {{ trial_days }}-day free trial</a>
+          {% if demo_url %}<a class="pf-btn pf-btn-line" href="{{ demo_url }}" target="_blank" rel="noopener">Open the demo club</a>{% endif %}
+        </div>
+        <p class="pf-hero-note">No card and no setup fee. Live in about five minutes.</p>
+      </div>
+      <div class="pf-half pf-half-right">
+        <div class="pf-sched" aria-label="Example: tonight's schedule at a four-court club">
+          <div class="pf-sched-head"><strong>Tonight</strong><span>4 courts, 5 PM to midnight</span></div>
+          <div class="pf-grid" id="pf-grid" aria-hidden="true"></div>
+          <div class="pf-feed" id="pf-feed" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ The three leaks #}
+<section class="pf-section" id="leaks" aria-labelledby="leaks-title">
+  <div class="pf-wrap">
+    <h2 id="leaks-title">Three places a club loses money every week</h2>
+    <p class="pf-intro">Most clubs run on WhatsApp chats and a register at reception. It works on a quiet Tuesday. On a busy Friday night, things slip.</p>
+
+    <article class="pf-leak">
+      <div>
+        <p class="problem">Bookings live in WhatsApp chats</p>
+        <h3>Two groups turn up for the same court</h3>
+        <p>Your club gets a booking site with live availability for every court. Players book themselves at any hour, and a slot can never be sold twice.</p>
+        <ul>
+          <li>Peak and off-peak prices, applied automatically</li>
+          <li>Racket rental, balls and coaching as add-ons</li>
+          <li>Walk-ins and phone bookings from the same schedule</li>
+        </ul>
+      </div>
+      <div class="pf-shot" aria-hidden="true">
+        <div class="pf-pay">
+          <div class="pf-pay-row"><span>Fri 28 Nov</span><strong>Court 2, indoor</strong></div>
+          <div class="pf-slots">
+            <span class="off">6:00</span><span class="off">7:00</span><span class="pick">8:00</span><span>9:00</span><span>10:00</span><span class="off">11:00</span>
+          </div>
+          <div class="pf-pay-row"><span>8:00 PM, 90 minutes</span><strong>Rs 9,000</strong></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pf-leak">
+      <div>
+        <p class="problem">No-shows at peak time</p>
+        <h3>The 8 PM slot sits empty and nobody pays for it</h3>
+        <p>Players pay a deposit, or the full amount, by JazzCash when they book. An unpaid slot is held for 15 minutes, then released for the next player. Confirmations and reminders go out on WhatsApp from your own number.</p>
+        <ul>
+          <li>Choose a deposit percentage or full payment</li>
+          <li>Reminders 24 hours and 2 hours before the game</li>
+          <li>Paid but cancelled? Refund it as club credit in one click</li>
+        </ul>
+      </div>
+      <div class="pf-shot" aria-hidden="true">
+        <div class="pf-chat">
+          <div class="pf-pay-row"><span>Slot held for you</span><span class="pf-timer">14:52</span></div>
+          <div class="pf-pay-row ball">Pay deposit, Rs 4,500</div>
+          <div class="pf-bubble"><b>Smash Padel Club</b>Hi Hamza, reminder: you're playing tomorrow on Court 1, 9:00 PM. Ref PB7K3Q9X.<time>8:58 PM</time></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="pf-leak">
+      <div>
+        <p class="problem">Cash at reception</p>
+        <h3>At closing, nobody knows what the drawer should hold</h3>
+        <p>Every payment is recorded with who took it and how it was paid. At the end of the day, reception counts the drawer and the difference is saved. You see every shortage, even from home.</p>
+        <ul>
+          <li>Takings by cash, card, JazzCash and Easypaisa</li>
+          <li>Reception can't change prices or cancel invoices</li>
+          <li>A warning when yesterday's cash wasn't counted</li>
+        </ul>
+      </div>
+      <div class="pf-shot" aria-hidden="true">
+        <div class="pf-cash">
+          <div><span>Cash payments recorded</span><strong>Rs 25,500</strong></div>
+          <div><span>Counted in the drawer</span><strong>Rs 25,000</strong></div>
+          <div class="short"><span>Short</span><span>Rs 500</span></div>
+          <div><span>Closed by</span><span>Hira, 2:04 AM</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ No-show calculator #}
+<section class="pf-section pf-section-white" aria-labelledby="calc-title">
+  <div class="pf-wrap">
+    <h2 id="calc-title">What are no-shows costing you?</h2>
+    <p class="pf-intro">Move the sliders to match your club. It's an estimate, but it's usually more than owners expect.</p>
+    <div class="pf-calc">
+      <form id="pf-calc" oninput="pfCalc()">
+        <div><label for="c-noshow">No-shows a week, whole club <output id="o-noshow">5</output></label>
+          <input type="range" id="c-noshow" min="0" max="30" value="5"></div>
+        <div><label for="c-price">Peak price per hour <output id="o-price">Rs 6,000</output></label>
+          <input type="range" id="c-price" min="2000" max="12000" step="500" value="6000"></div>
+        <div><label for="c-length">Typical game <output id="o-length">90 minutes</output></label>
+          <input type="range" id="c-length" min="60" max="120" step="30" value="90"></div>
+      </form>
+      <div class="pf-result" aria-live="polite">
+        <p>Empty prime-time slots cost you about</p>
+        <p class="big" id="r-lost">Rs 194,000</p>
+        <p>a month. If deposits stop 7 in 10 of those no-shows, you keep <strong id="r-saved">Rs 136,000</strong> a month.</p>
+        <p class="small" id="r-ratio">That's 9 times the price of the Pro plan.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ Setup steps (a real sequence) #}
+<section class="pf-section" aria-labelledby="steps-title">
+  <div class="pf-wrap">
+    <h2 id="steps-title">Live this afternoon</h2>
+    <p class="pf-intro">No installation and no training day. If you can use WhatsApp, you can run your club on {{ platform_name }}.</p>
+    <ol class="pf-steps">
+      <li><h3>Create your club</h3><p>Choose your club name and web address. Two starter courts are set up for you.</p></li>
+      <li><h3>Set courts and prices</h3><p>Add your courts, opening hours, peak prices, deposits and extras from the dashboard.</p></li>
+      <li><h3>Share your link</h3><p>Put it in your Instagram bio and WhatsApp status. Players start booking themselves.</p></li>
+    </ol>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ Everything included #}
+<section class="pf-section pf-section-white" aria-labelledby="inc-title">
+  <div class="pf-wrap">
+    <h2 id="inc-title">Everything the club runs on, in one place</h2>
+    <p class="pf-intro">One login for you, one for your reception staff, and a booking site for your players.</p>
+    <ul class="pf-included">
+      <li><strong>Booking website</strong><span>Your name, your prices, your courts</span></li>
+      <li><strong>Deposits and online payment</strong><span>JazzCash, straight to your account</span></li>
+      <li><strong>WhatsApp reminders</strong><span>From your own business number</span></li>
+      <li><strong>Invoices</strong><span>For every booking, ready to print</span></li>
+      <li><strong>Club credit and packages</strong><span>Sell Rs 50,000 of credit for Rs 45,000</span></li>
+      <li><strong>Weekly bookings</strong><span>Same court, same time, every week</span></li>
+      <li><strong>Walk-ins and phone bookings</strong><span>Click an empty slot to add one</span></li>
+      <li><strong>End-of-day cash report</strong><span>Counted, compared and saved</span></li>
+      <li><strong>Staff accounts</strong><span>Reception runs the day, you control the money</span></li>
+      <li><strong>Customer list</strong><span>Regulars, no-shows and what each has paid</span></li>
+      <li><strong>Owner dashboard</strong><span>Occupancy, revenue and busiest hours</span></li>
+      <li><strong>Promo codes</strong><span>Fill quiet mornings with an offer</span></li>
+    </ul>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ Pricing #}
+<section class="pf-section" id="pricing" aria-labelledby="pricing-title">
+  <div class="pf-wrap">
+    <h2 id="pricing-title">One monthly fee. No commission.</h2>
+    <p class="pf-intro">You keep everything players pay you. Every new club gets {{ trial_days }} days of Pro free.</p>
+    <div class="pf-plans">
+      {% for key, plan in plans.items %}
+      <div class="pf-plan{% if key == 'pro' %} featured{% endif %}">
+        <h3>{{ plan.label }}</h3>
+        <p class="tag">{{ plan.tagline }}</p>
+        <p class="pf-price">{{ plan.price|money }} <small>a month</small></p>
+        <ul>{% for f in plan.features %}<li>{{ f }}</li>{% endfor %}</ul>
+        <a class="pf-btn {% if key == 'pro' %}pf-btn-ink{% else %}pf-btn-outline{% endif %}" href="{% url 'platform_signup' %}">Start free trial</a>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="pf-plans-note">Prices in Pakistani rupees. Change plan or cancel any time.</p>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ FAQ #}
+<section class="pf-section pf-section-white" id="faq" aria-labelledby="faq-title">
+  <div class="pf-wrap">
+    <h2 id="faq-title">Questions owners ask</h2>
+    <div class="pf-faq">
+      <details><summary>Do players need to download an app?</summary>
+        <p>No. Players book on your club's website from any phone. They can book as a guest with just a name and mobile number, or create an account to see all their bookings.</p></details>
+      <details><summary>Where does online payment money go?</summary>
+        <p>Straight to your own JazzCash merchant account. {{ platform_name }} never holds your money and takes no commission. You can also leave online payment off and take payment at the club.</p></details>
+      <details><summary>Who pays for the WhatsApp messages?</summary>
+        <p>Messages are sent from your club's own WhatsApp Business number, so Meta bills your account directly at its standard rates. We help you set up the message templates.</p></details>
+      <details><summary>Can I still take walk-ins and phone bookings?</summary>
+        <p>Yes. Click any empty slot on the schedule to add a booking, take the payment, and the invoice is created for you.</p></details>
+      <details><summary>What can my reception staff do?</summary>
+        <p>Staff can take bookings, check players in and record payments. Only owners can change prices and settings, export data, cancel invoices or add staff.</p></details>
+      <details><summary>Can I use my own domain name?</summary>
+        <p>Yes, on the Pro plan. Your booking site can run on an address like book.yourclub.pk instead of {{ "yourclub."|add:domain }}.</p></details>
+      <details><summary>What happens when the free trial ends?</summary>
+        <p>Choose a plan and pay by bank transfer. If a payment is late you get seven extra days with a reminder in your dashboard, and your bookings and data are always kept.</p></details>
+    </div>
+  </div>
+</section>
+
+{# ------------------------------------------------------------------ Closing #}
+<section class="pf-section pf-final" aria-labelledby="final-title">
+  <div class="pf-wrap">
+    <div class="pf-final-box">
+      <h2 id="final-title">Fill your court sheet this week</h2>
+      <div class="pf-cta-row">
+        <a class="pf-btn pf-btn-ball" href="{% url 'platform_signup' %}">Start free trial</a>
+        <a class="pf-btn pf-btn-line" href="https://wa.me/{{ support_whatsapp }}?text={{ 'Hi, I run a padel club and want to know more.'|urlencode }}" target="_blank" rel="noopener">Ask us on WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* No-show calculator */
+function pfCalc() {
+  const n = +document.getElementById('c-noshow').value;
+  const price = +document.getElementById('c-price').value;
+  const mins = +document.getElementById('c-length').value;
+  const rs = v => 'Rs ' + (Math.round(v / 1000) * 1000).toLocaleString('en-US');
+  const lost = n * 4.33 * price * mins / 60;
+  const saved = lost * 0.7;
+  const pro = {{ pro_price|floatformat:"0" }};
+  document.getElementById('o-noshow').textContent = n;
+  document.getElementById('o-price').textContent = 'Rs ' + price.toLocaleString('en-US');
+  document.getElementById('o-length').textContent = mins + ' minutes';
+  document.getElementById('r-lost').textContent = rs(lost);
+  document.getElementById('r-saved').textContent = rs(saved);
+  const ratio = saved / pro;
+  document.getElementById('r-ratio').textContent = n === 0
+    ? 'No no-shows? Deposits still bring the money in before the game.'
+    : ratio >= 1.5 ? `That's ${Math.floor(ratio)} times the price of the Pro plan.`
+    : `Compared with Rs ${pro.toLocaleString('en-US')} a month for Pro.`;
+}
+pfCalc();
+
+/* Hero: one evening at a four-court club, played once */
+(() => {
+  const times = ['5 PM', '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM'];
+  const booked = {
+    '0-0': 'Hamza', '0-2': 'Sara', '1-0': 'Ayesha', '1-1': 'Usman', '1-3': 'Bilal', '2-1': 'Zainab',
+    '2-2': 'Omar', '2-3': 'Hira', '3-0': 'Saad', '3-2': 'Fatima', '3-3': 'Ali', '4-0': 'Hamza',
+    '4-1': 'Mahnoor', '4-2': 'Zain', '5-0': 'Usman', '5-1': 'Sara', '6-1': 'Omar',
+  };
+  const grid = document.getElementById('pf-grid');
+  grid.insertAdjacentHTML('beforeend', '<span></span>' + [1, 2, 3, 4].map(c => `<span class="h">Court ${c}</span>`).join(''));
+  times.forEach((t, r) => {
+    grid.insertAdjacentHTML('beforeend', `<span class="t">${t}</span>`);
+    for (let c = 0; c < 4; c++) {
+      const name = booked[`${r}-${c}`];
+      grid.insertAdjacentHTML('beforeend',
+        `<div class="pf-cell${name ? ' booked' : ''}" id="cell-${r}-${c}">${name ? `${name}<small>Paid</small>` : ''}</div>`);
+    }
+  });
+  const cell = (r, c) => document.getElementById(`cell-${r}-${c}`);
+  const set = (el, cls, html) => { el.className = 'pf-cell ' + cls; el.innerHTML = html; };
+  const feed = document.getElementById('pf-feed');
+  const icons = { pay: ['pay', 'Rs'], wa: ['wa', '✓'], free: ['free', '↺'] };
+  const say = (kind, text) => {
+    const [cls, glyph] = icons[kind];
+    feed.insertAdjacentHTML('afterbegin', `<div class="pf-event"><i class="${cls}">${glyph}</i><span>${text}</span></div>`);
+    while (feed.children.length > 2) feed.lastElementChild.remove();
+  };
+  // Starting state: someone is paying for 10 PM on Court 4
+  set(cell(5, 3), 'held', 'Kamran<small>Paying 0:41</small>');
+
+  let timer;
+  const steps = [
+    [900, () => {
+      let s = 899;
+      set(cell(3, 1), 'held', 'Bilal K.<small>Paying 14:59</small>');
+      timer = setInterval(() => { s--; const sm = cell(3, 1).querySelector('small');
+        if (sm && cell(3, 1).classList.contains('held')) sm.textContent = `Paying ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }, 1000);
+    }],
+    [2600, () => { clearInterval(timer); set(cell(3, 1), 'paid', 'Bilal K.<small>Deposit paid</small>');
+      say('pay', 'Deposit of Rs 4,500 received for Court 2 at 8 PM'); }],
+    [4300, () => { cell(4, 0).classList.add('ping'); say('wa', 'WhatsApp reminder sent to Hamza for Court 1 at 9 PM'); }],
+    [5300, () => cell(4, 0).classList.remove('ping')],
+    [6000, () => { set(cell(5, 3), '', ''); say('free', 'Unpaid hold released. Court 4 at 10 PM is open again'); }],
+    [7800, () => { set(cell(5, 3), 'paid', 'Rida<small>Deposit paid</small>'); say('pay', 'Court 4 at 10 PM booked online by Rida'); }],
+  ];
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    set(cell(3, 1), 'paid', 'Bilal K.<small>Deposit paid</small>');
+    set(cell(5, 3), 'paid', 'Rida<small>Deposit paid</small>');
+    say('wa', 'WhatsApp reminder sent to Hamza for Court 1 at 9 PM');
+    say('pay', 'Deposit of Rs 4,500 received for Court 2 at 8 PM');
+    return;
+  }
+  steps.forEach(([at, fn]) => setTimeout(fn, at));
+})();
+</script>
+{% endblock %}

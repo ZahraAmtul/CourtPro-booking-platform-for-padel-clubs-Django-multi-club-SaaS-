@@ -1,0 +1,78 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ club.club_name }} — Book a padel court{% endblock %}</title>
+  <meta name="description" content="{{ club.tagline }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="{% url 'core:home' %}">
+      <span class="brand-mark">{% include "partials/ball.svg" %}</span>
+      {{ club.club_name }}
+    </a>
+    <button class="nav-toggle" aria-label="Menu" onclick="document.getElementById('nav').classList.toggle('open')">☰</button>
+    <nav class="nav" id="nav">
+      <a href="{% url 'core:home' %}#courts">Courts</a>
+      <a href="{% url 'core:home' %}#pricing">Pricing</a>
+      <a href="{% url 'bookings:manage' %}">Manage booking</a>
+      {% if user.is_authenticated %}
+        {% if club_role %}<a href="{% url 'dashboard:overview' %}">Dashboard</a>{% endif %}
+        <a href="{% url 'accounts:my_bookings' %}">My bookings</a>
+        <form method="post" action="{% url 'accounts:logout' %}" style="display:inline">{% csrf_token %}
+          <button class="btn btn-sm btn-ghost" style="color:#cbd5e1;border-color:rgba(255,255,255,.15)">Log out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">Log in</a>
+      {% endif %}
+      <a class="btn btn-primary btn-sm" href="{% url 'bookings:book' %}">Book a court</a>
+    </nav>
+  </div>
+</header>
+
+{% if messages %}
+<div class="messages">
+  {% for message in messages %}<div class="message {{ message.tags }}">{{ message }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div>
+      <a class="brand" href="{% url 'core:home' %}"><span class="brand-mark">{% include "partials/ball.svg" %}</span>{{ club.club_name }}</a>
+      <p style="margin-top:1rem;max-width:360px">{{ club.tagline }}</p>
+    </div>
+    <div>
+      <h4>Visit us</h4>
+      {% if club.address %}<p>{% if club.map_url %}<a href="{{ club.map_url }}" target="_blank" rel="noopener">{{ club.address }}</a>{% else %}{{ club.address }}{% endif %}</p>{% endif %}
+      <p>Open daily {{ club.open_time|time:"g:i A" }} – {{ club.close_time|time:"g:i A" }}</p>
+    </div>
+    <div>
+      <h4>Contact</h4>
+      {% if club.phone %}<p><a href="tel:{{ club.phone }}">{{ club.phone }}</a></p>{% endif %}
+      {% if club.email %}<p><a href="mailto:{{ club.email }}">{{ club.email }}</a></p>{% endif %}
+      {% if club.instagram_url %}<p><a href="{{ club.instagram_url }}" target="_blank" rel="noopener">Instagram</a></p>{% endif %}
+    </div>
+    <div class="copy">© {% now "Y" %} {{ club.club_name }}. All rights reserved.</div>
+  </div>
+</footer>
+
+{% if club.whatsapp_url %}
+<a class="wa-float" href="{{ club.whatsapp_url }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  {% include "partials/whatsapp.svg" %}
+</a>
+{% endif %}
+<script>
+  setTimeout(() => document.querySelectorAll('.message').forEach(m => m.remove()), 6000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

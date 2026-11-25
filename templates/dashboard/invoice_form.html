@@ -1,0 +1,59 @@
+{% extends "dashboard/base.html" %}
+{% block title %}New invoice{% endblock %}
+{% block heading %}New invoice{% endblock %}
+{% block subheading %}For coaching, memberships, tournaments, equipment sales…{% endblock %}
+{% block actions %}<a class="btn btn-ghost btn-sm" href="{% url 'dashboard:invoice_list' %}">← Invoices</a>{% endblock %}
+{% block content %}
+<form method="post" class="form" style="max-width:900px">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+  <div class="panel"><div class="panel-head"><h3>Customer</h3></div><div class="panel-body">
+    <div class="form-grid">
+      {% include "partials/field.html" with field=form.bill_to_name %}
+      {% include "partials/field.html" with field=form.bill_to_phone %}
+      {% include "partials/field.html" with field=form.bill_to_email %}
+      {% include "partials/field.html" with field=form.due_date %}
+    </div>
+  </div></div>
+  <div class="panel"><div class="panel-head"><h3>Line items</h3><button type="button" class="btn btn-ghost btn-sm" id="add-item">+ Add line</button></div>
+    <div class="panel-body">
+      {{ formset.management_form }}
+      {% if formset.non_form_errors %}<div class="form-errors">{{ formset.non_form_errors|join:" " }}</div>{% endif %}
+      <div id="items">
+      {% for f in formset %}
+        <div class="item-row" style="display:grid;grid-template-columns:3fr 1fr 1.3fr;gap:.75rem">
+          {% include "partials/field.html" with field=f.description %}
+          {% include "partials/field.html" with field=f.quantity %}
+          {% include "partials/field.html" with field=f.unit_price %}
+        </div>
+      {% endfor %}
+      </div>
+      <template id="item-template">
+        <div class="item-row" style="display:grid;grid-template-columns:3fr 1fr 1.3fr;gap:.75rem">
+          {% with f=formset.empty_form %}
+          {% include "partials/field.html" with field=f.description %}
+          {% include "partials/field.html" with field=f.quantity %}
+          {% include "partials/field.html" with field=f.unit_price %}
+          {% endwith %}
+        </div>
+      </template>
+      <div class="form-grid">
+        {% include "partials/field.html" with field=form.discount %}
+      </div>
+      {% include "partials/field.html" with field=form.notes %}
+      <p class="muted small">{% if club.tax_percent %}{{ club.tax_label }} of {{ club.tax_percent|floatformat:"-2" }}% is added automatically.{% endif %}</p>
+      <button class="btn btn-blue btn-lg">Create invoice</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('add-item').addEventListener('click', () => {
+  const total = document.getElementById('id_items-TOTAL_FORMS');
+  const html = document.getElementById('item-template').innerHTML.replace(/__prefix__/g, total.value);
+  document.getElementById('items').insertAdjacentHTML('beforeend', html);
+  total.value = parseInt(total.value, 10) + 1;
+});
+</script>
+{% endblock %}

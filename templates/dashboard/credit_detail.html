@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}{{ wallet.name }} · credit{% endblock %}
+{% block heading %}{{ wallet.name }}{% endblock %}
+{% block subheading %}{{ wallet.phone }} · club credit{% endblock %}
+{% block actions %}<a class="btn btn-ghost btn-sm" href="{% url 'dashboard:credit_list' %}">← Club credit</a>{% endblock %}
+{% block content %}
+<div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+  <div class="kpi accent"><div class="label">Balance</div><div class="value">{{ wallet.balance|money }}</div><div class="hint">available to spend</div></div>
+  <div class="kpi"><div class="label">Customer since</div><div class="value" style="font-size:1.3rem">{{ wallet.created_at|date:"j M Y" }}</div></div>
+  <div class="kpi"><div class="label">Recent bookings</div><div class="value">{{ bookings|length }}</div><div class="hint"><a href="{% url 'dashboard:booking_list' %}?q={{ wallet.phone|slice:'-10:' }}">see all</a></div></div>
+</div>
+<div class="dash-grid">
+  <div>
+    <div class="panel"><div class="panel-head"><h3>Credit history</h3></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>When</th><th>What</th><th>By</th><th class="num">Amount</th><th class="num">Balance</th></tr></thead>
+        <tbody>
+        {% for t in transactions %}
+          <tr><td>{{ t.created_at|date:"j M Y, g:i A" }}</td>
+            <td>{{ t.get_kind_display }}<div class="muted small">{{ t.note }}{% if t.invoice %} · <a href="{% url 'dashboard:invoice_detail' t.invoice.pk %}">{{ t.invoice.number }}</a>{% endif %}</div></td>
+            <td class="small muted">{{ t.created_by.first_name|default:t.created_by.email|default:"—" }}</td>
+            <td class="num" style="color:{% if t.amount > 0 %}var(--green){% else %}var(--ink){% endif %};font-weight:700">{% if t.amount > 0 %}+{% endif %}{{ t.amount|money }}</td>
+            <td class="num">{{ t.balance_after|money }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="empty">No activity yet.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    {% if bookings %}
+    <div class="panel"><div class="panel-head"><h3>Recent bookings</h3></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for b in bookings %}<tr class="link-row" data-href="{% url 'dashboard:booking_detail' b.pk %}"><td><strong>{{ b.start_at|date:"D j M" }}</strong> {{ b.start_at|time:"g:i A" }}</td><td>{{ b.court.name }}</td><td><span class="badge badge-{{ b.status_color }}">{{ b.get_status_display }}</span></td><td class="num">{% if b.invoice.balance %}<strong style="color:var(--amber)">{{ b.invoice.balance|money }} due</strong>{% else %}Paid{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+  </div>
+  <div>
+    {% include "dashboard/_sell_credit.html" %}
+    {% if club_role == "owner" %}
+    <form method="post" action="{% url 'dashboard:credit_adjust' wallet.pk %}" class="panel form">{% csrf_token %}
+      <div class="panel-head"><h3>Adjust balance</h3><span class="muted small">owner only · logged</span></div>
+      <div class="panel-body">
+        {% for field in adjust_form %}{% include "partials/field.html" %}{% endfor %}
+        <button class="btn btn-ghost btn-block">Save adjustment</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

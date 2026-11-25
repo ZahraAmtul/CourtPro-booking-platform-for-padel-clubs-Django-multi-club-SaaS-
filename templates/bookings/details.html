@@ -1,0 +1,104 @@
+{% extends "base.html" %}{% load club %}
+{% block title %}Your details · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="container">
+    <div class="steps-bar"><span>1 · Choose time</span><span class="on">2 · Your details</span><span>3 · Confirmed</span></div>
+    <h1 style="font-size:2.1rem">Almost there</h1>
+    <p>Tell us who's playing and add any extras.</p>
+  </div>
+</div>
+
+<div class="container page-body">
+  <form method="post" class="form checkout" id="checkout" data-currency="{{ club.currency_symbol }}" data-court="{{ court_amount }}"
+        data-prepay="{{ prepay_mode }}" data-deposit="{{ club.deposit_percent }}" data-tax="{{ club.tax_percent }}">
+    {% csrf_token %}
+    <input type="hidden" name="court" value="{{ court.slug }}">
+    <input type="hidden" name="date" value="{{ business_date.isoformat }}">
+    <input type="hidden" name="start" value="{{ start_value }}">
+    <input type="hidden" name="duration" value="{{ duration }}">
+
+    <div class="stack">
+      <div class="card">
+        <h3>Your details</h3>
+        {% if not user.is_authenticated %}<p class="muted small">Have an account? <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}">Log in</a> to see all your bookings in one place.</p>{% endif %}
+        {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+        <div class="form-grid">
+          {% include "partials/field.html" with field=form.customer_name %}
+          {% include "partials/field.html" with field=form.customer_phone %}
+          {% include "partials/field.html" with field=form.customer_email %}
+          {% include "partials/field.html" with field=form.players %}
+        </div>
+        {% include "partials/field.html" with field=form.notes %}
+      </div>
+
+      {% if form.extra_items %}
+      <div class="card">
+        <h3>Extras</h3>
+        <p class="muted small">Rentals are ready for you at reception.</p>
+        {% for extra, field in form.extra_fields %}
+        <div class="extra-row">
+          <div><strong>{{ extra.name }}</strong> <span class="muted">· {{ extra.price|money }}</span>
+            {% if extra.description %}<div class="muted small">{{ extra.description }}</div>{% endif %}{{ field.errors }}</div>
+          {{ field }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <aside class="card summary-card">
+      <h3>Booking summary</h3>
+      <dl class="kv" style="margin:1rem 0">
+        <dt>Court</dt><dd>{{ court.name }}</dd>
+        <dt>Date</dt><dd>{{ business_date|date:"D, j M Y" }}</dd>
+        <dt>Time</dt><dd>{{ start_at|time:"g:i A" }} – {{ end_at|time:"g:i A" }}</dd>
+        <dt>Duration</dt><dd>{{ duration|duration }}</dd>
+      </dl>
+      <hr class="divider">
+      <div class="summary-line"><span>Court fee</span><span>{{ court_amount|money }}</span></div>
+      <div class="summary-line" id="extras-line" hidden><span>Extras</span><span id="extras-total"></span></div>
+      {% if club.tax_percent %}<div class="summary-line muted small"><span>{{ club.tax_label }} ({{ club.tax_percent|floatformat:"-2" }}%)</span><span>added on invoice</span></div>{% endif %}
+      <div class="summary-line total"><span>Total</span><span id="grand-total">{{ court_amount|money }}</span></div>
+      {% if prepay_mode != "none" %}
+      <div class="prepay-box">
+        <div class="summary-line"><strong>Due now to confirm</strong><strong id="due-now"></strong></div>
+        <div class="muted small">{% if prepay_mode == "deposit" %}{{ club.deposit_percent }}% deposit online, the rest at the club.{% else %}Pay online to confirm your slot.{% endif %} We hold the slot for {{ club.payment_hold_minutes }} minutes while you pay.</div>
+      </div>
+      {% endif %}
+
+      <div class="field" style="margin-top:1rem">
+        <label for="{{ form.promo_code.id_for_label }}">Promo code</label>
+        {{ form.promo_code }}{{ form.promo_code.errors }}
+      </div>
+      <button class="btn btn-primary btn-block btn-lg">{% if prepay_mode != "none" %}Continue to payment{% else %}Confirm booking{% endif %}</button>
+      <p class="muted small" style="margin:.9rem 0 0">Free cancellation up to {{ club.cancellation_hours }}h before. {{ club.payment_instructions }}</p>
+      <a href="{{ back_url }}" class="small">← Change time</a>
+    </aside>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(() => {
+  const form = document.getElementById('checkout');
+  const cur = form.dataset.currency, court = parseFloat(form.dataset.court);
+  const fmt = v => cur + ' ' + Math.round(v).toLocaleString('en-US');
+  function update() {
+    let extras = 0;
+    form.querySelectorAll('.qty-input').forEach(i => extras += (parseInt(i.value, 10) || 0) * parseFloat(i.dataset.price));
+    document.getElementById('extras-line').hidden = extras === 0;
+    document.getElementById('extras-total').textContent = fmt(extras);
+    document.getElementById('grand-total').textContent = fmt(court + extras);
+    const due = document.getElementById('due-now');
+    if (due) {
+      const total = (court + extras) * (1 + parseFloat(form.dataset.tax || 0) / 100);
+      due.textContent = fmt(form.dataset.prepay === 'deposit' ? Math.min(total, Math.ceil(total * parseFloat(form.dataset.deposit) / 100)) : total);
+    }
+  }
+  form.querySelectorAll('.qty-input').forEach(i => i.addEventListener('input', update));
+  update();
+})();
+</script>
+{% endblock %}

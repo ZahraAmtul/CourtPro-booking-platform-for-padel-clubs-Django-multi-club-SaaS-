@@ -1,0 +1,22 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}Club credit{% endblock %}
+{% block heading %}Club credit{% endblock %}
+{% block subheading %}{{ totals.balance|default:0|money }} prepaid credit held by {{ totals.n }} customer{{ totals.n|pluralize }}{% endblock %}
+{% block actions %}<a class="btn btn-blue btn-sm" href="#sell">+ Sell credit</a>{% endblock %}
+{% block content %}
+<div class="dash-grid">
+  <div class="panel">
+    <div class="panel-head"><form method="get" class="filters"><input type="search" name="q" value="{{ request.GET.q }}" placeholder="Name or mobile"><button class="btn btn-dark btn-sm">Search</button></form></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Customer</th><th>Mobile</th><th>Last activity</th><th class="num">Balance</th></tr></thead>
+      <tbody>
+      {% for w in page %}
+        <tr class="link-row" data-href="{% url 'dashboard:credit_detail' w.pk %}"><td><a href="{% url 'dashboard:credit_detail' w.pk %}"><strong>{{ w.name }}</strong></a></td><td>{{ w.phone }}</td><td>{{ w.updated_at|date:"j M Y" }}</td><td class="num"><strong>{{ w.balance|money }}</strong></td></tr>
+      {% empty %}<tr><td colspan="4" class="empty">No one has club credit yet. Sell your first package →</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <div>{% include "dashboard/_sell_credit.html" %}</div>
+</div>
+{% include "partials/pagination.html" %}
+{% endblock %}

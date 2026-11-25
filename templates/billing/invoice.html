@@ -1,0 +1,90 @@
+{% load static club %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoice {{ invoice.number }} · {{ club.club_name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <style>
+    body { background: #eef1f6; }
+    .sheet { width: min(820px, 100% - 2rem); margin: 2rem auto; background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 3rem; position: relative; overflow: hidden; }
+    .inv-head { display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
+    .inv-title { font-size: 2.2rem; font-weight: 800; letter-spacing: -.03em; margin: 0; }
+    .meta { display: grid; grid-template-columns: auto auto; gap: .2rem 1.25rem; font-size: .9rem; }
+    .meta span:nth-child(odd) { color: var(--muted); }
+    .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2.5rem 0 2rem; font-size: .92rem; }
+    .parties h4 { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: .5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+    th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 2px solid var(--ink); padding: .6rem .4rem; }
+    td { padding: .85rem .4rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .num { text-align: right; white-space: nowrap; }
+    .totals { margin-left: auto; width: min(320px, 100%); margin-top: 1.25rem; }
+    .totals div { display: flex; justify-content: space-between; padding: .35rem 0; }
+    .totals .grand { border-top: 2px solid var(--ink); margin-top: .4rem; padding-top: .7rem; font-size: 1.2rem; font-weight: 800; }
+    .stamp { position: absolute; top: 38px; right: -48px; transform: rotate(35deg); padding: .4rem 4rem; font-weight: 800; letter-spacing: .15em; font-size: .85rem; }
+    .stamp.paid { background: #16a34a; color: #fff; } .stamp.void { background: #64748b; color: #fff; }
+    .stamp.unpaid, .stamp.partial { background: #f59e0b; color: #fff; }
+    .toolbar { width: min(820px, 100% - 2rem); margin: 1.5rem auto -1rem; display: flex; justify-content: flex-end; gap: .5rem; }
+    @media (max-width: 640px) { .sheet { padding: 1.5rem; } .parties { grid-template-columns: 1fr; } }
+    @media print { body { background: #fff; } .toolbar { display: none; } .sheet { box-shadow: none; margin: 0; width: 100%; padding: 0; border-radius: 0; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    {% if invoice.booking %}<a class="btn btn-ghost btn-sm" href="{% url 'bookings:detail' invoice.booking.reference %}">View booking</a>{% endif %}
+    {% if can_pay_online %}<a class="btn btn-primary btn-sm" href="{% url 'billing:pay' invoice.token %}">Pay online</a>{% endif %}
+    <button class="btn btn-dark btn-sm" onclick="window.print()">Print / Save PDF</button>
+  </div>
+  <div class="sheet">
+    <div class="stamp {{ invoice.status }}">{{ invoice.get_status_display|upper }}</div>
+    <div class="inv-head">
+      <div>
+        <div class="brand" style="color:var(--navy)"><span class="brand-mark">{% include "partials/ball.svg" %}</span>{{ club.club_name }}</div>
+        <p class="muted small" style="margin-top:.75rem">{{ club.address }}<br>{{ club.phone }}{% if club.email %} · {{ club.email }}{% endif %}</p>
+      </div>
+      <div>
+        <p class="inv-title">Invoice</p>
+        <div class="meta">
+          <span>Number</span><strong>{{ invoice.number }}</strong>
+          <span>Issued</span><span>{{ invoice.issue_date|date:"j M Y" }}</span>
+          <span>Due</span><span>{{ invoice.due_date|date:"j M Y" }}</span>
+          {% if invoice.booking %}<span>Booking</span><span class="mono">{{ invoice.booking.reference }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div><h4>Bill to</h4><strong>{{ invoice.bill_to_name }}</strong><br>{{ invoice.bill_to_phone }}{% if invoice.bill_to_email %}<br>{{ invoice.bill_to_email }}{% endif %}</div>
+      <div><h4>Payment</h4>{{ club.payment_instructions|linebreaksbr }}</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr><td>{{ item.description }}</td><td class="num">{{ item.quantity|floatformat:"-2" }}</td><td class="num">{{ item.unit_price|money }}</td><td class="num">{{ item.amount|money }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div><span class="muted">Subtotal</span><span>{{ invoice.subtotal|money }}</span></div>
+      {% if invoice.discount %}<div><span class="muted">Discount</span><span>− {{ invoice.discount|money }}</span></div>{% endif %}
+      {% if invoice.tax_percent %}<div><span class="muted">{{ club.tax_label }} ({{ invoice.tax_percent|floatformat:"-2" }}%)</span><span>{{ invoice.tax_amount|money }}</span></div>{% endif %}
+      <div class="grand"><span>Total</span><span>{{ invoice.total|money }}</span></div>
+      {% if invoice.amount_paid %}<div><span class="muted">Paid</span><span>{{ invoice.amount_paid|money }}</span></div>{% endif %}
+      {% if invoice.status != "void" %}<div style="font-weight:800"><span>Balance due</span><span>{{ invoice.balance|money }}</span></div>{% endif %}
+    </div>
+
+    {% if payments %}
+    <h4 style="margin-top:2rem;font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Payments received</h4>
+    <table><tbody>
+      {% for p in payments %}<tr><td>{{ p.paid_at|date:"j M Y, g:i A" }}</td><td>{{ p.get_method_display }}{% if p.reference %} · {{ p.reference }}{% endif %}</td><td class="num">{{ p.amount|money }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% endif %}
+
+    {% if invoice.notes %}<p class="muted small" style="margin-top:1.5rem">{{ invoice.notes }}</p>{% endif %}
+    {% if club.invoice_footer %}<p style="margin-top:2.5rem;text-align:center;font-weight:600">{{ club.invoice_footer }}</p>{% endif %}
+  </div>
+</body>
+</html>

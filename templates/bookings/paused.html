@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Online booking is paused</h1><p>{{ club.club_name }} isn't taking online bookings right now.</p></div></div>
+<div class="narrow page-body"><div class="card" style="text-align:center">
+  <p>Please contact the club to book a court.</p>
+  <div class="row" style="justify-content:center">
+    {% if club.phone %}<a class="btn btn-dark" href="tel:{{ club.phone }}">Call {{ club.phone }}</a>{% endif %}
+    {% if club.whatsapp_url %}<a class="btn btn-whatsapp" href="{{ club.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+  </div>
+</div></div>
+{% endblock %}

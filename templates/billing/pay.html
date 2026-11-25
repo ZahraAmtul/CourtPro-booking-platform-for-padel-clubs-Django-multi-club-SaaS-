@@ -1,0 +1,75 @@
+{% extends "base.html" %}{% load club %}
+{% block title %}Payment · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="container">
+    {% if booking %}<div class="steps-bar"><span>1 · Choose time</span><span>2 · Your details</span><span class="on">3 · Payment</span></div>{% endif %}
+    <h1 style="font-size:2.1rem">{% if booking.awaiting_payment %}Pay to confirm your court{% else %}Pay invoice {{ invoice.number }}{% endif %}</h1>
+    <p>Secure checkout{% if gateway %} with {{ gateway.label }}{% endif %}.</p>
+  </div>
+</div>
+<div class="narrow page-body" style="width:min(640px,100% - 2.5rem)">
+  <div class="card">
+    {% if booking.awaiting_payment %}
+    <div class="hold-banner" data-seconds="{{ booking.hold_seconds_left }}">
+      <span>⏱ Slot held for you</span><strong id="hold-timer">--:--</strong>
+    </div>
+    {% elif booking and booking.status == "expired" %}
+    <div class="form-errors">Your slot hold expired before payment was completed. <a href="{% url 'bookings:book' %}?date={{ booking.business_date.isoformat }}">Book again →</a></div>
+    {% endif %}
+
+    {% if failed %}<div class="form-errors">Last attempt failed: {{ failed.response_message|default:"payment was not completed" }}. You can try again.</div>{% endif %}
+
+    {% if booking %}
+    <dl class="kv" style="margin-bottom:1.25rem">
+      <dt>Court</dt><dd>{{ booking.court.name }}</dd>
+      <dt>When</dt><dd>{{ booking.start_at|date:"D j M" }}, {{ booking.start_at|time:"g:i A" }} – {{ booking.end_at|time:"g:i A" }}</dd>
+      <dt>Reference</dt><dd class="mono">{{ booking.reference }}</dd>
+    </dl>
+    {% endif %}
+    <div class="summary-line"><span>Invoice total</span><span>{{ invoice.total|money }}</span></div>
+    {% if invoice.amount_paid %}<div class="summary-line"><span>Already paid</span><span>− {{ invoice.amount_paid|money }}</span></div>{% endif %}
+    <div class="summary-line total"><span>Balance</span><span>{{ invoice.balance|money }}</span></div>
+
+    {% if options and gateway and invoice.status != "void" %}
+      {% if booking.status != "expired" %}
+      <form method="post" class="stack" style="margin-top:1.25rem">
+        {% csrf_token %}
+        {% for key, label, amount in options %}
+        <button name="option" value="{{ key }}" class="btn {% if forloop.first %}btn-primary{% else %}btn-ghost{% endif %} btn-block btn-lg">
+          {{ label }} · {{ amount|money }}
+        </button>
+        {% endfor %}
+      </form>
+      <p class="muted small" style="margin:1rem 0 0;text-align:center">You'll be taken to {{ gateway.label }} to pay by wallet or card, then brought back here.</p>
+      {% endif %}
+    {% elif invoice.balance %}
+      <p class="muted" style="margin-top:1rem">{{ club.payment_instructions }}</p>
+    {% else %}
+      <p style="margin-top:1rem"><span class="badge badge-green">Paid in full</span></p>
+    {% endif %}
+
+    <hr class="divider">
+    <div class="row between">
+      {% if booking %}<a href="{% url 'bookings:detail' booking.reference %}">View booking</a>{% endif %}
+      <a href="{% url 'billing:public_invoice' invoice.token %}">View invoice</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const box = document.querySelector('.hold-banner');
+  if (!box) return;
+  let left = parseInt(box.dataset.seconds, 10);
+  const el = document.getElementById('hold-timer');
+  const tick = () => {
+    if (left <= 0) { el.textContent = 'expired'; box.classList.add('expired'); document.querySelectorAll('button[name=option]').forEach(b => b.disabled = true); return; }
+    el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+    left -= 1; setTimeout(tick, 1000);
+  };
+  tick();
+})();
+</script>
+{% endblock %}

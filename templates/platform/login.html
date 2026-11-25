@@ -1,0 +1,14 @@
+{% extends "platform/base.html" %}
+{% block title %}Platform login · {{ platform_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Platform login</h1><p>For the {{ platform_name }} team. Club owners log in on their club's own site.</p></div></div>
+<div class="narrow page-body">
+  <form method="post" class="card form">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">Email or password is incorrect.</div>{% endif %}
+    {% include "partials/field.html" with field=form.username %}
+    {% include "partials/field.html" with field=form.password %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn btn-dark btn-block">Log in</button>
+  </form>
+</div>
+{% endblock %}

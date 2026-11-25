@@ -1,0 +1,51 @@
+{% extends "dashboard/base.html" %}{% load club %}
+{% block title %}{{ invoice.number }}{% endblock %}
+{% block heading %}{{ invoice.number }} <span class="badge badge-{{ invoice.status_color }}" style="vertical-align:middle">{{ invoice.get_status_display }}</span>{% endblock %}
+{% block subheading %}{{ invoice.bill_to_name }} · issued {{ invoice.issue_date|date:"j M Y" }}{% if invoice.booking %} · booking {{ invoice.booking.reference }}{% endif %}{% endblock %}
+{% block actions %}
+  {% if invoice.booking %}<a class="btn btn-ghost btn-sm" href="{% url 'dashboard:booking_detail' invoice.booking.pk %}">View booking</a>{% endif %}
+  <a class="btn btn-dark btn-sm" href="{% url 'billing:public_invoice' invoice.token %}" target="_blank">Print / PDF</a>
+{% endblock %}
+{% block content %}
+<div class="dash-grid">
+  <div>
+    <div class="panel">
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          {% for item in items %}<tr><td>{{ item.description }}</td><td class="num">{{ item.quantity|floatformat:"-2" }}</td><td class="num">{{ item.unit_price|money }}</td><td class="num">{{ item.amount|money }}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+      <div class="panel-body" style="border-top:1px solid var(--line)">
+        <div style="max-width:320px;margin-left:auto">
+          <div class="summary-line"><span>Subtotal</span><span>{{ invoice.subtotal|money }}</span></div>
+          {% if invoice.discount %}<div class="summary-line"><span>Discount</span><span>−{{ invoice.discount|money }}</span></div>{% endif %}
+          {% if invoice.tax_percent %}<div class="summary-line"><span>{{ club.tax_label }} ({{ invoice.tax_percent|floatformat:"-2" }}%)</span><span>{{ invoice.tax_amount|money }}</span></div>{% endif %}
+          <div class="summary-line total"><span>Total</span><span>{{ invoice.total|money }}</span></div>
+          <div class="summary-line"><span>Paid</span><span>{{ invoice.amount_paid|money }}</span></div>
+          <div class="summary-line" style="font-weight:800"><span>Balance due</span><span>{{ invoice.balance|money }}</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-head"><h3>Payments</h3></div>
+      <div class="table-wrap"><table class="table"><tbody>
+        {% for p in payments %}
+        <tr><td>{{ p.paid_at|date:"j M Y, g:i A" }}</td><td>{{ p.get_method_display }}{% if p.reference %}<div class="muted small">{{ p.reference }}</div>{% endif %}</td><td class="small muted">{{ p.received_by.first_name|default:p.received_by.username|default:"" }}</td><td class="num"><strong>{{ p.amount|money }}</strong></td></tr>
+        {% empty %}<tr><td class="muted">No payments yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+  <div>
+    {% if invoice.balance %}{% include "dashboard/_payment_form.html" %}{% endif %}
+    <div class="panel"><div class="panel-head"><h3>Customer</h3></div><div class="panel-body">
+      <dl class="kv"><dt>Name</dt><dd>{{ invoice.bill_to_name }}</dd><dt>Phone</dt><dd>{{ invoice.bill_to_phone|default:"—" }}</dd><dt>Email</dt><dd>{{ invoice.bill_to_email|default:"—" }}</dd><dt>Due</dt><dd>{{ invoice.due_date|date:"j M Y" }}</dd></dl>
+      {% if invoice.notes %}<p class="muted small" style="margin-top:1rem">{{ invoice.notes }}</p>{% endif %}
+    </div></div>
+    {% if club_role == "owner" and invoice.status != "void" and not invoice.amount_paid %}
+    <form method="post" action="{% url 'dashboard:invoice_void' invoice.pk %}" onsubmit="return confirm('Void this invoice?')" style="margin-top:1rem">
+      {% csrf_token %}<button class="btn btn-danger btn-sm">Void invoice</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

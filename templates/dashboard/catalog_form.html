@@ -1,0 +1,16 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{% if obj %}Edit {{ obj }}{% else %}Add to {{ title|lower }}{% endif %}{% endblock %}
+{% block actions %}<a class="btn btn-ghost btn-sm" href="{% url 'dashboard:catalog_list' kind %}">← {{ title }}</a>{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" class="form panel" style="max-width:760px">
+  {% csrf_token %}
+  <div class="panel-body">
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="form-grid">
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+    </div>
+    <button class="btn btn-blue">Save</button>
+  </div>
+</form>
+{% endblock %}

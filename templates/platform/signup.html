@@ -1,0 +1,35 @@
+{% extends "platform/base.html" %}
+{% block title %}Start your free trial · {{ platform_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Create your club's booking site</h1><p>{{ trial_days }} days free · no card needed · live in minutes</p></div></div>
+<div class="narrow page-body" style="width:min(640px,100% - 2.5rem)">
+  <form method="post" class="card form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <h3>Your club</h3>
+    {% include "partials/field.html" with field=form.club_name %}
+    <div class="field{% if form.subdomain.errors %} has-error{% endif %}">
+      <label for="{{ form.subdomain.id_for_label }}">Booking site address</label>
+      <div class="row" style="flex-wrap:nowrap;gap:.4rem">{{ form.subdomain }}<span class="muted" style="white-space:nowrap">.{{ domain }}</span></div>
+      {{ form.subdomain.errors }}
+    </div>
+    {% include "partials/field.html" with field=form.city %}
+    <hr class="divider">
+    <h3>Your login</h3>
+    <div class="form-grid">
+      {% include "partials/field.html" with field=form.owner_name %}
+      {% include "partials/field.html" with field=form.phone %}
+    </div>
+    {% include "partials/field.html" with field=form.email %}
+    {% include "partials/field.html" with field=form.password %}
+    <button class="btn btn-primary btn-block btn-lg">Create my club</button>
+    <p class="muted small" style="margin:1rem 0 0">We'll set up two starter courts — rename them and set your prices in the dashboard.</p>
+  </form>
+</div>
+<script>
+  const n = document.getElementById('id_club_name'), s = document.getElementById('id_subdomain');
+  let touched = !!s.value;
+  s.addEventListener('input', () => touched = true);
+  n.addEventListener('input', () => { if (!touched) s.value = n.value.toLowerCase().replace(/padel|club/g, '').trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40); });
+</script>
+{% endblock %}

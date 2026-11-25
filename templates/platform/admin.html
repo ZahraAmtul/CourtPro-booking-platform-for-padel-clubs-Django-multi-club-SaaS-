@@ -1,0 +1,40 @@
+{% extends "platform/base.html" %}{% load club %}
+{% block title %}Platform admin · {{ platform_name }}{% endblock %}
+{% block head %}{% load static %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
+{% block content %}
+<div class="container" style="padding:2rem 0;width:min(1360px,100% - 2rem)">
+  <div class="row between" style="margin-bottom:1.25rem"><div><h1 style="font-size:1.8rem;margin:0">Clubs</h1><p class="muted" style="margin:0">Your customers, their plans and what they're doing on the platform.</p></div>
+    <a class="btn btn-blue btn-sm" href="{% url 'platform_signup' %}">+ Add club</a></div>
+  <div class="kpis">
+    <div class="kpi accent"><div class="label">Monthly recurring revenue</div><div class="value">{{ mrr|money }}</div><div class="hint">{{ counts.active }} paying club{{ counts.active|pluralize }}</div></div>
+    <div class="kpi"><div class="label">In trial</div><div class="value">{{ counts.trial }}</div><div class="hint">convert these!</div></div>
+    <div class="kpi"><div class="label">Overdue</div><div class="value">{{ counts.grace|add:counts.expired }}</div><div class="hint">{{ counts.grace }} in grace · {{ counts.expired }} expired</div></div>
+    <div class="kpi"><div class="label">Last 30 days</div><div class="value">{{ bookings_30d }}</div><div class="hint">bookings · {{ processed_30d|money }} processed</div></div>
+  </div>
+  <div class="panel"><div class="table-wrap"><table class="table">
+    <thead><tr><th>Club</th><th>Plan</th><th>Status</th><th>Covered until</th><th class="num">Courts</th><th class="num">Bookings 30d</th><th class="num">Collected 30d</th><th></th></tr></thead>
+    <tbody>
+    {% for c in clubs %}
+      <tr>
+        <td><strong>{{ c.name }}</strong><div class="small"><a href="{{ c.base_url }}" target="_blank">{{ c.host }}</a></div></td>
+        <td>{{ c.plan_info.label }}<div class="muted small" style="white-space:nowrap">{{ c.monthly_price|money }}/mo</div></td>
+        <td>{% with st=c.subscription_state %}<span class="badge {% if st == 'active' %}badge-green{% elif st == 'trial' %}badge-blue{% elif st == 'grace' %}badge-amber{% else %}badge-red{% endif %}">{{ st }}</span>{% endwith %}</td>
+        <td>{{ c.covered_until|date:"j M Y" }}<div class="muted small">{% if c.days_left >= 0 %}{{ c.days_left }} days left{% else %}{{ c.days_left|stringformat:"d"|slice:"1:" }} days ago{% endif %}</div></td>
+        <td class="num">{{ c.stats.courts }}</td>
+        <td class="num">{{ c.stats.bookings }}</td>
+        <td class="num">{{ c.stats.processed|money }}</td>
+        <td class="num">
+          <form method="post" action="{% url 'platform_club_action' c.pk %}" class="row" style="justify-content:flex-end;gap:.35rem;flex-wrap:nowrap">{% csrf_token %}
+            <input type="hidden" name="months" value="1">
+            <button name="action" value="extend" class="btn btn-ghost btn-sm" title="Record one month paid">+1 mo</button>
+            <button name="action" value="open" class="btn btn-ghost btn-sm">Open</button>
+            <a class="btn btn-ghost btn-sm" href="{% url 'platform_club' c.pk %}">Edit</a>
+            <button name="action" value="suspend" class="btn btn-sm {% if c.is_suspended %}btn-blue{% else %}btn-danger{% endif %}" onclick="return confirm('{% if c.is_suspended %}Re-activate{% else %}Suspend{% endif %} {{ c.name|escapejs }}?')">{% if c.is_suspended %}Activate{% else %}Suspend{% endif %}</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}<tr><td colspan="8" class="empty">No clubs yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div></div>
+</div>
+{% endblock %}

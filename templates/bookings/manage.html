@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Manage booking · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div class="container"><h1 style="font-size:2.1rem">Manage your booking</h1><p>View, download your invoice or cancel.</p></div></div>
+<div class="narrow page-body">
+  <form method="post" class="card form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    {% include "partials/field.html" with field=form.reference %}
+    {% include "partials/field.html" with field=form.phone %}
+    <button class="btn btn-dark btn-block">Find my booking</button>
+    <p class="muted small" style="margin:1rem 0 0">Your reference starts with <strong>PB</strong> and is shown on your confirmation.</p>
+  </form>
+</div>
+{% endblock %}

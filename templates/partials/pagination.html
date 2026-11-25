@@ -1,0 +1,9 @@
+{% load club %}{% if page.has_other_pages %}
+<div class="row between" style="margin-top:1rem">
+  <span class="muted small">Page {{ page.number }} of {{ page.paginator.num_pages }} · {{ page.paginator.count }} results</span>
+  <div class="row">
+    {% if page.has_previous %}<a class="btn btn-ghost btn-sm" href="{% query_update page=page.previous_page_number %}">← Previous</a>{% endif %}
+    {% if page.has_next %}<a class="btn btn-ghost btn-sm" href="{% query_update page=page.next_page_number %}">Next →</a>{% endif %}
+  </div>
+</div>
+{% endif %}

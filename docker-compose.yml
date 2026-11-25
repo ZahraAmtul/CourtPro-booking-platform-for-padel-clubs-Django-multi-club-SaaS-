@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: padel
+      POSTGRES_USER: padel
+      POSTGRES_PASSWORD: padel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  web:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - media:/app/media
+  scheduler:
+    # Releases unpaid holds and sends WhatsApp/email reminders every 2 minutes
+    build: .
+    env_file: .env
+    command: python manage.py run_scheduled_jobs --loop 120
+    depends_on:
+      - db
+volumes:
+  pgdata:
+  media:

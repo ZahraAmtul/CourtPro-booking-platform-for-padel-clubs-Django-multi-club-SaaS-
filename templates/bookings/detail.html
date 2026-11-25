@@ -1,0 +1,80 @@
+{% extends "base.html" %}{% load club %}
+{% block title %}Booking {{ booking.reference }} · {{ club.club_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="container">
+    <div class="steps-bar"><span>1 · Choose time</span><span>2 · Your details</span><span class="on">3 · Confirmed</span></div>
+    <h1 style="font-size:2.1rem">Your booking</h1>
+    <p>Save your reference — you'll need it to manage this booking.</p>
+  </div>
+</div>
+<div class="narrow page-body" style="width:min(720px,100% - 2.5rem)">
+  <div class="card">
+    <div class="confirm-hero">
+      {% if booking.awaiting_payment %}
+        <div class="confirm-icon pending"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h2>Complete payment to confirm</h2>
+        <p class="muted">Your slot is held until {{ booking.payment_due_at|time:"g:i A" }}.</p>
+        <p><a class="btn btn-primary btn-lg" href="{% url 'billing:pay' booking.invoice.token %}">Pay {{ booking.prepayment_amount|money }} now</a></p>
+      {% elif booking.status == "expired" %}
+        <div class="confirm-icon cancelled"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h2>Hold expired</h2>
+        <p class="muted">Payment wasn't completed in time, so the slot was released. <a href="{% url 'bookings:book' %}?date={{ booking.business_date.isoformat }}">Book again</a>.</p>
+      {% elif booking.status == "cancelled" or booking.status == "no_show" %}
+        <div class="confirm-icon cancelled"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        <h2>Booking {{ booking.get_status_display|lower }}</h2>
+      {% elif booking.status == "pending" %}
+        <div class="confirm-icon pending"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h2>Request received</h2>
+        <p class="muted">The club will confirm your booking shortly.</p>
+      {% else %}
+        <div class="confirm-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <h2>You're booked!</h2>
+        <p class="muted">See you on {{ booking.court.name }}{% if booking.customer_email %} — a confirmation was sent to {{ booking.customer_email }}{% endif %}.</p>
+      {% endif %}
+      <div class="ref-box mono">{{ booking.reference }}</div>
+    </div>
+
+    <dl class="kv">
+      <dt>Status</dt><dd><span class="badge badge-{{ booking.status_color }}">{{ booking.get_status_display }}</span></dd>
+      <dt>Court</dt><dd>{{ booking.court.name }} · {{ booking.court.get_court_type_display }}</dd>
+      <dt>Date</dt><dd>{{ booking.business_date|date:"l, j F Y" }}</dd>
+      <dt>Time</dt><dd>{{ booking.start_at|time:"g:i A" }} – {{ booking.end_at|time:"g:i A" }} ({{ booking.duration_minutes|duration }})</dd>
+      <dt>Name</dt><dd>{{ booking.customer_name }} · {{ booking.customer_phone }}</dd>
+      {% for be in extras %}<dt>{% if forloop.first %}Extras{% endif %}</dt><dd>{{ be.quantity }} × {{ be.extra.name }}</dd>{% endfor %}
+    </dl>
+
+    {% if booking.invoice %}
+    <hr class="divider">
+    <div class="row between">
+      <div>
+        <div class="muted small">Invoice {{ booking.invoice.number }}</div>
+        <strong style="font-size:1.3rem">{{ booking.invoice.total|money }}</strong>
+        <span class="badge badge-{{ booking.invoice.status_color }}">{{ booking.invoice.get_status_display }}</span>
+      </div>
+      <div class="row">
+        {% if booking.invoice.balance and booking.is_active and club.gateway_ready and not booking.awaiting_payment %}<a class="btn btn-dark" href="{% url 'billing:pay' booking.invoice.token %}">Pay online</a>{% endif %}
+        <a class="btn btn-ghost" href="{% url 'billing:public_invoice' booking.invoice.token %}" target="_blank">View invoice</a>
+      </div>
+    </div>
+    {% if booking.invoice.amount_paid and booking.invoice.balance %}<p class="small" style="margin:.75rem 0 0"><strong>{{ booking.invoice.amount_paid|money }} paid</strong> · {{ booking.invoice.balance|money }} due at the club</p>{% endif %}
+    {% if booking.invoice.balance %}<p class="muted small" style="margin-top:.5rem">{{ club.payment_instructions }}</p>{% endif %}
+    {% endif %}
+
+    <hr class="divider">
+    <div class="row between">
+      <div class="row">
+        <a class="btn btn-dark" href="{% url 'bookings:book' %}">Book another</a>
+        {% if club.whatsapp_url %}<a class="btn btn-whatsapp" href="{{ club.whatsapp_url }}?text=Hi%2C%20about%20my%20booking%20{{ booking.reference }}" target="_blank" rel="noopener">WhatsApp the club</a>{% endif %}
+      </div>
+      {% if can_cancel %}
+      <form method="post" action="{% url 'bookings:cancel' booking.reference %}" onsubmit="return confirm('Cancel this booking?')">
+        {% csrf_token %}<button class="btn btn-danger">Cancel booking</button>
+      </form>
+      {% elif booking.is_upcoming %}
+      <span class="muted small">Need to change? Contact the club — online cancellation closes {{ club.cancellation_hours }}h before.</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
